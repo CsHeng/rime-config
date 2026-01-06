@@ -1,0 +1,15 @@
+customization:
+  distribution_code_name: Weasel
+  distribution_version: 0.17.4
+  generator: "Weasel::UIStyleSettings"
+  modified_time: "Mon Jul 21 20:30:28 2025"
+  rime_version: 1.13.1
+patch:
+  style/color_scheme: wechat
+  app_options/+:
+    r5apex_dx12.exe:
+      ascii_mode: true
+      no_inline: true
+    cs2.exe:
+      ascii_mode: true
+      no_inline: true

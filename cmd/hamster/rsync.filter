@@ -1,0 +1,19 @@
+# Hamster target sync filter
+# Input: build/stage/hamster/ (merged upstream + overlays)
+
+# Never touch user state
+- user.yaml
+- installation.yaml
+- **.userdb/
+- build/
+- build/**
+
+# iOS: do not push UI yaml (let app/device manage it)
+- default.custom.yaml
+- squirrel.yaml
+- weasel.yaml
+- hamster.yaml
+- hamster.custom.yaml
+- "简纯+.trime.yaml"
+
++ *

@@ -1,0 +1,19 @@
+# Rime default settings
+# encoding: utf-8
+customization:
+  distribution_code_name: Weasel
+  distribution_version: 0.17.4
+  generator: "Rime::SwitcherSettings"
+  modified_time: "Sun Jul 20 00:07:22 2025"
+  rime_version: 1.13.1
+
+patch:
+  schema_list:
+    - schema: wanxiang
+
+  # 方案选单相关
+  switcher:
+    hotkeys:
+      # - Control+grave
+      - Alt+grave
+    fold_options: false   # 开关记忆（方案中的 switches），从方案选单（而非快捷键）切换时会记住的选项，需要记忆的开关不能设定 reset

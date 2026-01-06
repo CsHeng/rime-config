@@ -1,0 +1,38 @@
+# platform = Rime 的 UI 壳子（squirrel / weasel / hamster / hamster3）
+# 不使用 ios 这种“系统 platform”聚合概念。
+
+auto:
+  darwin: squirrel
+  windows: weasel
+
+platforms:
+  squirrel:
+    target:
+      type: home_subpath
+      subpath: Library/Rime
+    ui_layer: squirrel
+    rsync_filter: cmd/squirrel/rsync.filter
+
+  weasel:
+    target:
+      type: unset
+    ui_layer: weasel
+    rsync_filter: cmd/weasel/rsync.filter
+
+  hamster:
+    target:
+      type: icloud_docs
+      icloud_base_env: RIME_HAMSTER_ICLOUD_BASE
+      icloud_base_default: iCloud~dev~fuxiao~app~hamsterapp
+      subpath: Documents/RIME/Rime
+    ui_layer: none
+    rsync_filter: cmd/hamster/rsync.filter
+
+  hamster3:
+    target:
+      type: icloud_docs
+      icloud_base_env: RIME_HAMSTER3_ICLOUD_BASE
+      icloud_base_default: iCloud~com~ihsiao~apps~Hamster3
+      subpath: Documents/RimeUserData/rime-wanxiang
+    ui_layer: none
+    rsync_filter: cmd/hamster3/rsync.filter

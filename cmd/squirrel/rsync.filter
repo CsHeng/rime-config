@@ -1,0 +1,17 @@
+# Squirrel (macOS) target sync filter
+# Input: build/stage/squirrel/ (merged upstream + overlays)
+# Output: target dir (e.g. ~/Library/Rime)
+
+# Never touch user state
+- user.yaml
+- installation.yaml
+- **.userdb/
+- build/
+- build/**
+
+# Keep target clean: exclude other platform UI yaml
+- weasel.yaml
+- hamster.yaml
+- "简纯+.trime.yaml"
+
++ *

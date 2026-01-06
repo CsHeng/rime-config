@@ -1,0 +1,43 @@
+patch:
+  style/color_scheme: wechat
+  style/color_scheme_dark: wechat_dark
+  # style/inline_preedit: true # 內嵌編碼（僅支持TSF）
+  style/candidate_list_layout: linear
+  style/font_face: "PingFangSC, MiSans, MiSans L3"
+  style/font_point: 12
+  reset_ascii_mode: true  # This sets the initial state to ASCII mode
+
+  app_options/+:
+    com.alibaba.DingTalkMac:
+      ascii_mode: false
+    com.tencent.xinWechat:
+      ascii_mode: false
+    com.tencent.qq:
+      ascii_mode: false
+    com.runningwithcrayons.Alfred:
+      ascii_mode: true
+    com.apple.Terminal:
+      ascii_mode: true
+    com.github.wez.wezterm:
+      ascii_mode: true
+    # cursor
+    com.todesktop.230313mzl4w4u92:
+      ascii_mode: true
+    com.microsoft.VSCode:
+      ascii_mode: true
+    com.jetbrains.goland:
+      ascii_mode: true
+    com.jetbrains.phpstorm:
+      ascii_mode: true
+    com.jetbrains.webstorm:
+      ascii_mode: true
+    com.jetbrains.datagrip:
+      ascii_mode: true
+    com.jetbrains.pycharm:
+      ascii_mode: true
+    com.google.android.studio:
+      ascii_mode: true
+    com.google.Chrome:
+      ascii_mode: false
+    com.microsoft.edgemac:
+      ascii_mode: false

@@ -1,0 +1,20 @@
+# Ignore everything by default; allowlist only what we intend to track.
+*
+
+!.gitignore
+!README.md
+!AGENTS.md
+!cmd/
+!cmd/**
+!*.custom.yaml
+!custom_phrase_user.txt
+
+# never track secrets / local env
+cmd/.env
+
+# local artifacts (target dir content should not be tracked)
+build/
+.DS_Store
+
+# ignore local symlinks/helpers
+cmd/**/SharedSupport

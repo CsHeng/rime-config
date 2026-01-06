@@ -1,0 +1,16 @@
+# Weasel (Windows) target sync filter
+# Input: build/stage/weasel/ (merged upstream + overlays)
+
+# Never touch user state
+- user.yaml
+- installation.yaml
+- **.userdb/
+- build/
+- build/**
+
+# Keep target clean: exclude other platform UI yaml
+- squirrel.yaml
+- hamster.yaml
+- "简纯+.trime.yaml"
+
++ *
