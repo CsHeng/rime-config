@@ -96,14 +96,16 @@ github_releases_json() {
   local out_file="$2"
   local api_url="https://api.github.com/repos/${repo}/releases"
 
-  local headers=()
   if [ -n "${GITHUB_TOKEN:-}" ]; then
-    headers+=(-H "Authorization: token ${GITHUB_TOKEN}")
-  fi
-
-  if ! curl -sS "${headers[@]}" "$api_url" -o "$out_file"; then
+    if ! curl -sS -H "Authorization: token ${GITHUB_TOKEN}" "$api_url" -o "$out_file"; then
     log error "Failed to fetch GitHub releases: $repo"
     return 1
+  fi
+  else
+    if ! curl -sS "$api_url" -o "$out_file"; then
+      log error "Failed to fetch GitHub releases: $repo"
+      return 1
+    fi
   fi
 
   if [ ! -s "$out_file" ] || ! jq empty "$out_file" >/dev/null 2>&1; then
@@ -311,16 +313,8 @@ build_stage_dir() {
   mkdir -p "$stage"
 
   if [ "$platform" != "none" ]; then
-    # Keep stage deterministic:
-    # - never carry upstream *.custom.yaml / custom_phrase_user.txt / user.yaml / installation.yaml / userdb
-    rsync -a \
-      --exclude='*.custom.yaml' \
-      --exclude='custom_phrase_user.txt' \
-      --exclude='user.yaml' \
-      --exclude='installation.yaml' \
-      --exclude='*.userdb/' \
-      --exclude='*.userdb/**' \
-      "$UPSTREAM_DIR/" "$stage/"
+    # Stage 只做合并（upstream + overlays）；最终写入 target 的过滤由 cmd/<platform>/rsync.filter 负责。
+    rsync -a --exclude='.DS_Store' "$UPSTREAM_DIR/" "$stage/"
   fi
 
   # local layer (repo tracked)

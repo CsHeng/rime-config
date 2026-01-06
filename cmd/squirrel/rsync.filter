@@ -9,6 +9,10 @@
 - build/
 - build/**
 
+# Upstream docs/examples (not runtime)
+- custom/
+- custom/**
+
 # Keep target clean: exclude other platform UI yaml
 - weasel.yaml
 - hamster.yaml

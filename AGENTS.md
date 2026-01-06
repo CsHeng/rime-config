@@ -5,7 +5,9 @@
 
 ## Definitions
 
-- **platform**：Rime 的 UI 壳子（`squirrel` / `weasel` / `hamster` / `hamster3`）。
+- 自定义置顶短语：默认使用 `custom_phrase_user.txt`（通过 `wanxiang*.custom.yaml` 的 `custom_phrase/user_dict` 统一指向）
+
+- **platform**：Rime 的 UI 壳子（`squirrel`=macOS / `weasel`=Windows / `hamster`、`hamster3`=iOS app）。
 - 不使用 `ios` 这种聚合“系统 platform”。
 
 ## Required Files (source-of-truth)

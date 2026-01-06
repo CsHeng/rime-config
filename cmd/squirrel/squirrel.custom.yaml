@@ -1,6 +1,47 @@
 patch:
   style/color_scheme: wechat
   style/color_scheme_dark: wechat_dark
+
+  # 主题配色：从旧构建产物复用 wechat / wechat_dark
+  preset_color_schemes/+:
+      wechat:
+        author: zsakvo
+        back_color: 0xFFFFFF
+        border_height: 0
+        border_width: 8
+        candidate_format: "%c %@ "
+        candidate_list_layout: linear
+        comment_text_color: 0x999999
+        corner_radius: 5
+        font_face: PingFangSC
+        font_point: 16
+        hilited_candidate_back_color: 0x75B100
+        hilited_candidate_text_color: 0xFFFFFF
+        hilited_corner_radius: 5
+        inline_preedit: true
+        label_font_point: 12
+        name: "微信"
+        text_color: 0x424242
+      wechat_dark:
+        author: shlroland
+        back_color: 0x151515
+        border_color: 0x151515
+        border_height: 0
+        border_width: 8
+        candidate_format: "%c %@ "
+        candidate_list_layout: linear
+        comment_text_color: 0xAEAEAE
+        corner_radius: 5
+        font_face: PingFangSC
+        font_point: 16
+        hilited_candidate_back_color: 0x75B100
+        hilited_candidate_text_color: 0xFFFFFF
+        hilited_corner_radius: 5
+        inline_preedit: true
+        label_color: 0x777777
+        label_font_point: 12
+        name: "微信·暗"
+        text_color: 0xBBBBBB
   # style/inline_preedit: true # 內嵌編碼（僅支持TSF）
   style/candidate_list_layout: linear
   style/font_face: "PingFangSC, MiSans, MiSans L3"

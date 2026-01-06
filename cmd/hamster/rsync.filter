@@ -8,6 +8,10 @@
 - build/
 - build/**
 
+# Upstream docs/examples (not runtime)
+- custom/
+- custom/**
+
 # iOS: do not push UI yaml (let app/device manage it)
 - default.custom.yaml
 - squirrel.yaml
