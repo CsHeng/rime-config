@@ -1,0 +1,4 @@
+# Bootstrap filter: 只同步 installation.yaml 和 user.yaml
++ installation.yaml
++ user.yaml
+- *

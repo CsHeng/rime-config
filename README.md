@@ -7,12 +7,13 @@
 
 ## 用法
 
-- 首次初始化（可选）：`./cmd/init.sh --platform <auto|squirrel|weasel|hamster|hamster3>`
+- 首次更新（含初始化）：`./cmd/update.sh --init --platform <auto|squirrel|weasel|hamster|hamster3>`
 - 日常更新：`./cmd/update.sh --platform <auto|squirrel|weasel|hamster|hamster3>`（默认 `auto`）
 
 说明：
 - 自定义置顶短语使用 `custom_phrase_user.txt`（由 `wanxiang.custom.yaml` 配置 `custom_phrase/user_dict` 指向）
-- `--target <dir>` 仅用于临时测试覆盖；正常由 `cmd/platforms.yaml` 推导目标目录。
+- `--target <dir>` 仅用于临时测试覆盖；正常由 `cmd/platforms.yaml` 推导目标目录
+- 默认使用 `--delete` 清理合并结果中不存在的文件；如需保留目标端多余文件，使用 `--no-delete`。
 
 ## 仓库追踪内容（git）
 
@@ -20,7 +21,7 @@
 - `custom_phrase_user.txt`：各 UI 壳通用置顶词库
 - `cmd/common/default.custom.yaml`：通用 UI patch（可选写入目标根目录）
 - `cmd/<ui>/*.custom.yaml`：UI patch（按平台选择性写入目标根目录）
-- `cmd/<ui>/{installation.yaml,user.yaml}`：每个壳子的模板（init 仅在目标缺失时写入）
+- `cmd/<ui>/{installation.yaml,user.yaml}`：每个壳子的模板（`--init` 时仅在目标缺失时写入）
 - `cmd/<ui>/rsync.filter`：合并后（upstream+overlays）-> target 的同步过滤规则
 
 ## 不追踪

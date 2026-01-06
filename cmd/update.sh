@@ -4,21 +4,20 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
 
-# Source .env if present (never tracked)
+# Source .env if present for GITHUB_TOKEN (never tracked)
 if [ -f "$SCRIPT_DIR/.env" ]; then
   # shellcheck disable=SC1091
   source "$SCRIPT_DIR/.env"
 fi
 
-TARGET_DIR="${RIME_TARGET_DIR:-}"
-LOCAL_DIR="${RIME_LOCAL_DIR:-$REPO_DIR}"
-PLATFORM="${RIME_PLATFORM:-auto}"
-RUN_INIT="${RIME_INIT:-0}"
+TARGET_DIR=""
+PLATFORM="auto"
+RUN_INIT=0
 
 DEBUG=0
 DRY_RUN=0
 NO_DOWNLOAD=0
-RSYNC_DELETE="${RIME_RSYNC_DELETE:-1}"
+RSYNC_DELETE=1
 
 BUILD_DIR="$REPO_DIR/build"
 TMP_DIR="$BUILD_DIR/tmp"
@@ -52,15 +51,15 @@ log() {
 
 usage() {
   cat <<USAGE
-Usage: $0 [--platform <auto|squirrel|weasel|hamster|hamster3|none>] [--target <dir>] [--init] [--dry-run] [--no-download] [--no-delete] [--debug]
+Usage: $0 [--platform <auto|squirrel|weasel|hamster|hamster3|none>] [--target <dir>] [--init] [--dry-run] [--no-download] [--delete|--no-delete] [--debug]
 
 Flow:
 - Download once -> build/upstream/
 - Merge upstream + local/platform overlays -> build/stage/<platform>/
 - rsync(filter) stage -> target
 
-Env:
-  RIME_PLATFORM, RIME_TARGET_DIR, RIME_LOCAL_DIR, RIME_INIT, GITHUB_TOKEN, RIME_RSYNC_DELETE
+Environment:
+  GITHUB_TOKEN     # GitHub API 认证（可选，避免 API 限流）
 USAGE
 }
 
@@ -74,6 +73,42 @@ require_cmd() {
 
 ensure_dirs() {
   mkdir -p "$TMP_DIR" "$MARKERS_DIR" "$CACHE_DIR" "$UPSTREAM_DIR" "$STAGE_ROOT"
+}
+
+rsync_bootstrap_templates() {
+  local resolved="$1"
+  local target="$2"
+
+  if [ "$resolved" = "none" ]; then
+    return 0
+  fi
+
+  local tpl_dir="$REPO_DIR/cmd/$resolved/"
+  if [ ! -d "$tpl_dir" ]; then
+    return 0
+  fi
+
+  # Get bootstrap filter file
+  if [ ! -f "$REPO_DIR/cmd/platforms.sh" ]; then
+    log error "Missing mapping: cmd/platforms.sh"
+    return 1
+  fi
+
+  # shellcheck disable=SC1090
+  source "$REPO_DIR/cmd/platforms.sh"
+  local filter_rel
+  filter_rel="$(platform_bootstrap_filter_file "$resolved")"
+  if [ -z "$filter_rel" ] || [ ! -f "$REPO_DIR/$filter_rel" ]; then
+    log error "Missing bootstrap filter for platform '$resolved': $filter_rel"
+    return 1
+  fi
+
+  mkdir -p "$target"
+  rsync -a --ignore-existing \
+    --filter="merge $REPO_DIR/$filter_rel" \
+    "$tpl_dir" "$target/"
+
+  log info "Initialized templates: $resolved -> $target"
 }
 
 resolve_platform() {
@@ -318,13 +353,13 @@ build_stage_dir() {
   fi
 
   # local layer (repo tracked)
-  if [ -f "$LOCAL_DIR/custom_phrase_user.txt" ]; then
-    rsync -a "$LOCAL_DIR/custom_phrase_user.txt" "$stage/"
+  if [ -f "$REPO_DIR/custom_phrase_user.txt" ]; then
+    rsync -a "$REPO_DIR/custom_phrase_user.txt" "$stage/"
   fi
 
   shopt -s nullglob
   local f
-  for f in "$LOCAL_DIR"/*.custom.yaml; do
+  for f in "$REPO_DIR"/*.custom.yaml; do
     rsync -a "$f" "$stage/"
   done
   shopt -u nullglob
@@ -436,8 +471,8 @@ main() {
     fi
   fi
 
-  if [ "$RUN_INIT" -eq 1 ] && [ -x "$REPO_DIR/cmd/init.sh" ]; then
-    "$REPO_DIR/cmd/init.sh" --platform "$platform" --target "$target" >/dev/null
+  if [ "$RUN_INIT" -eq 1 ]; then
+    rsync_bootstrap_templates "$platform" "$target"
   fi
 
   local stage

@@ -60,6 +60,16 @@ platform_rsync_filter_file() {
   _yq_p "$platform" -r '.platforms[strenv(P)].rsync_filter // ""'
 }
 
+platform_bootstrap_filter_file() {
+  local platform="$1"
+  if [ ! -f "$CONFIG_YAML" ]; then
+    echo ""
+    return 0
+  fi
+
+  _yq_p "$platform" -r '.platforms[strenv(P)].bootstrap_filter // ""'
+}
+
 platform_target_dir() {
   local platform="$1"
 
@@ -68,40 +78,13 @@ platform_target_dir() {
     return 0
   fi
 
-  local t
-  t=$(_yq_p "$platform" -r '.platforms[strenv(P)].target.type // "unset"')
+  local target_path
+  target_path=$(_yq_p "$platform" -r '.platforms[strenv(P)].target_dir // ""')
 
-  case "$t" in
-    home_subpath)
-      local sub
-      sub=$(_yq_p "$platform" -r '.platforms[strenv(P)].target.subpath // ""')
-      if [ -z "$sub" ]; then
-        echo ""
-      else
-        echo "${HOME}/${sub}"
-      fi
-      ;;
-    icloud_docs)
-      local env_key
-      local def
-      local sub
-      env_key=$(_yq_p "$platform" -r '.platforms[strenv(P)].target.icloud_base_env // ""')
-      def=$(_yq_p "$platform" -r '.platforms[strenv(P)].target.icloud_base_default // ""')
-      sub=$(_yq_p "$platform" -r '.platforms[strenv(P)].target.subpath // ""')
+  # 展开 ~ 为 $HOME
+  if [ -n "$target_path" ]; then
+    target_path="${target_path/#\~/$HOME}"
+  fi
 
-      if [ -z "$env_key" ] || [ -z "$def" ] || [ -z "$sub" ]; then
-        echo ""
-        return 0
-      fi
-
-      local base="${!env_key:-$def}"
-      echo "${HOME}/Library/Mobile Documents/${base}/${sub}"
-      ;;
-    unset|none|"")
-      echo ""
-      ;;
-    *)
-      echo ""
-      ;;
-  esac
+  echo "$target_path"
 }
