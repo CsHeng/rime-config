@@ -1,5 +1,4 @@
 # platform = Rime 的 UI 壳子（squirrel / weasel / hamster / hamster3）
-# 不使用 ios 这种"系统 platform"聚合概念。
 
 auto:
   darwin: squirrel
@@ -11,12 +10,16 @@ platforms:
     ui_layer: squirrel
     rsync_filter: cmd/squirrel/update-rsync.filter
     bootstrap_filter: cmd/squirrel/bootstrap-rsync.filter
+    redeploy_cmd: '"/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel" --reload'
+    sync_cmd: '"/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel" --sync'
 
   weasel:
     target_dir: ""
     ui_layer: weasel
     rsync_filter: cmd/weasel/update-rsync.filter
     bootstrap_filter: cmd/weasel/bootstrap-rsync.filter
+    redeploy_cmd: '"WeaselDeployer.exe" /deploy'
+    sync_cmd: '"WeaselDeployer.exe" /sync'
 
   hamster:
     target_dir: ~/Library/Mobile Documents/iCloud~dev~fuxiao~app~hamsterapp/Documents/RIME/Rime

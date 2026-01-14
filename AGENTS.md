@@ -8,7 +8,6 @@
 - 自定义置顶短语：默认使用 `custom_phrase_user.txt`（通过 `wanxiang*.custom.yaml` 的 `custom_phrase/user_dict` 统一指向）
 
 - **platform**：Rime 的 UI 壳子（`squirrel`=macOS / `weasel`=Windows / `hamster`、`hamster3`=iOS app）。
-- 不使用 `ios` 这种聚合“系统 platform”。
 
 ## Required Files (source-of-truth)
 
@@ -16,13 +15,13 @@
 - YAML 读取薄封装：`cmd/platforms.sh`（内部用 `yq` 读取 YAML，提供 bash 函数给脚本调用）
 - 初始化脚本：`cmd/init.sh`
 - 日常更新脚本：`cmd/update.sh`
-- per-platform rsync filter：`cmd/<platform>/rsync.filter`
+- per-platform rsync filter：`cmd/<platform>/update-rsync.filter` (update) / `bootstrap-rsync.filter` (init)
 
 ## Flow: init (optional)
 
-`cmd/init.sh` 只负责把 `cmd/<platform>/{installation.yaml,user.yaml}` 初始化到 target 根目录：
+`cmd/update.sh --init` (internally calls `rsync_bootstrap_templates`) 只负责把 `cmd/<platform>/` 下的模板文件初始化到 target：
+- 过滤规则：`cmd/<platform>/bootstrap-rsync.filter`
 - 统一用 `rsync`，且仅写入缺失文件（`--ignore-existing`）
-- 不下载上游、不写入本地层
 
 ## Flow: update (daily)
 
@@ -38,8 +37,12 @@
 - 该目录可随时删除并通过流程重新生成
 
 3) **platform 资源 + 下载的资源** 必须一起经过 per-platform filter，通过一次 `rsync` 写入 target：
-- `rsync build/stage/<platform>/ -> <target>/` + `--filter="merge cmd/<platform>/rsync.filter"`
-- 默认开启 `--delete`（可用 `--no-delete` 或 `RIME_RSYNC_DELETE=0` 关闭）
+- `rsync build/stage/<platform>/ -> <target>/` + `--filter="merge cmd/<platform>/update-rsync.filter"`
+- 默认**不**使用 `--delete`（需要清理时手动 `--delete`，建议先用 `--dry-run --delete` 预览）
+
+4) **Post-update Hooks**：
+- 根据 `cmd/platforms.yaml` 配置自动执行 `redeploy_cmd`（默认开启，可用 `--no-redeploy` 关闭）
+- 根据 `cmd/platforms.yaml` 配置自动执行 `sync_cmd`（默认开启，可用 `--no-sync` 关闭）
 
 ## Git Tracking Policy
 

@@ -1,13 +1,70 @@
 # 工具脚本 (cmd/)
 
-- `platforms.yaml`：平台配置（target_dir / filter / ui_layer）
-- `platforms.sh`：薄封装（用 yq 读取 `platforms.yaml`，对外提供 bash 函数）
-- `update.sh`：日常更新；使用 `--init` 参数可在更新前执行初始化（写入缺失的 installation.yaml 和 user.yaml）
-  - 下载上游到 `build/upstream/`（只下载一次）
-  - 把"上游 + 本地通用层 + UI 层"合并到 `build/stage/<platform>/`
-  - 再用 rsync + per-platform filter 同步到目标目录（一次 rsync 完成写入）
+## 目录结构
 
-约定：
-- 同步与过滤统一用 rsync；不再使用 cp。
-- 每个 UI/平台维护独立 `cmd/<ui>/rsync.filter`，用于精细控制"合并结果"如何写入目标目录。
-- 默认使用 `--delete` 清理合并结果中不存在的文件；如需保留目标端多余文件，使用 `--no-delete`。
+```
+cmd/
+├── platforms.yaml          # 平台配置（source of truth）
+├── platforms.sh            # YAML 读取薄封装（bash 函数）
+├── update.sh               # 日常更新 + 可选初始化
+├── common/                 # 通用层配置
+│   └── default.custom.yaml
+└── <ui>/                   # UI 特定配置
+    ├── *.custom.yaml       # UI patch
+    ├── installation.yaml   # 初始化模板
+    ├── user.yaml           # 初始化模板
+    ├── update-rsync.filter # 更新过滤规则
+    └── bootstrap-rsync.filter # 初始化过滤规则
+```
+
+## 核心脚本
+
+### platforms.sh
+用 `yq` 读取 `platforms.yaml`，提供以下 bash 函数：
+- `platform_resolve_auto`：根据 OS 自动检测平台
+- `platform_ui_layer`：获取 UI 层配置
+- `platform_rsync_filter_file`：获取 rsync filter 路径
+- `platform_bootstrap_filter_file`：获取 bootstrap filter 路径
+- `platform_target_dir`：获取目标目录
+- `platform_redeploy_cmd`：获取重新部署命令
+- `platform_sync_cmd`：获取同步命令
+
+### update.sh
+**流程：**
+```
+1. 下载 upstream → build/upstream/
+2. 合并 upstream + 本地层 → build/stage/<platform>/
+3. rsync + filter → target/
+4. 触发 redeploy/sync（可选）
+```
+
+**约定：**
+- 统一使用 rsync，不用 cp
+- 每个平台维护独立的 filter 文件
+- 默认不使用 `--delete`，需手动启用
+
+## Filter 规则
+
+### update-rsync.filter（日常更新）
+保护内容：
+- `user.yaml`, `installation.yaml`（用户状态）
+- `**.userdb/`（用户数据库）
+- `build/`（编译产物）
+- `lua/tips/`（运行时生成）
+
+### bootstrap-rsync.filter（初始化）
+- 仅写入 `installation.yaml`, `user.yaml`
+- 使用 `--ignore-existing` 不覆盖已存在文件
+
+## 平台配置示例
+
+```yaml
+platforms:
+  squirrel:
+    target_dir: ~/Library/Rime
+    ui_layer: squirrel
+    rsync_filter: cmd/squirrel/update-rsync.filter
+    bootstrap_filter: cmd/squirrel/bootstrap-rsync.filter
+    redeploy_cmd: '"/Library/.../Squirrel" --reload'
+    sync_cmd: '"/Library/.../Squirrel" --sync'
+```

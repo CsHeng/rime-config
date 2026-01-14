@@ -7,6 +7,8 @@
 - **.userdb/
 - build/
 - build/**
+- lua/tips/
+- lua/tips/**
 
 # Upstream docs/examples (not runtime)
 - custom/

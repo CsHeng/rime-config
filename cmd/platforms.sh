@@ -88,3 +88,25 @@ platform_target_dir() {
 
   echo "$target_path"
 }
+
+platform_redeploy_cmd() {
+  local platform="$1"
+  if [ ! -f "$CONFIG_YAML" ]; then
+    echo ""
+    return 0
+  fi
+  local cmd
+  cmd="$(_yq_p "$platform" -r '.platforms[strenv(P)].redeploy_cmd // ""')"
+  [ -n "$cmd" ] && echo "$cmd" || echo ""
+}
+
+platform_sync_cmd() {
+  local platform="$1"
+  if [ ! -f "$CONFIG_YAML" ]; then
+    echo ""
+    return 0
+  fi
+  local cmd
+  cmd="$(_yq_p "$platform" -r '.platforms[strenv(P)].sync_cmd // ""')"
+  [ -n "$cmd" ] && echo "$cmd" || echo ""
+}

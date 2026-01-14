@@ -17,7 +17,9 @@ RUN_INIT=0
 DEBUG=0
 DRY_RUN=0
 NO_DOWNLOAD=0
-RSYNC_DELETE=1
+RSYNC_DELETE=0
+REDEPLOY=1
+SYNC=1
 
 BUILD_DIR="$REPO_DIR/build"
 TMP_DIR="$BUILD_DIR/tmp"
@@ -51,7 +53,7 @@ log() {
 
 usage() {
   cat <<USAGE
-Usage: $0 [--platform <auto|squirrel|weasel|hamster|hamster3|none>] [--target <dir>] [--init] [--dry-run] [--no-download] [--delete|--no-delete] [--debug]
+Usage: $0 [--platform <auto|squirrel|weasel|hamster|hamster3|none>] [--target <dir>] [--init] [--dry-run] [--no-download] [--delete|--no-delete] [--[no-]redeploy] [--[no-]sync] [--debug]
 
 Flow:
 - Download once -> build/upstream/
@@ -414,7 +416,7 @@ rsync_stage_to_target() {
     rsync_opts+=(-n -i)
   fi
 
-  log info "stage -> $platform : $target"
+  log info "Stage -> $platform : $target"
   rsync "${rsync_opts[@]}" \
     --filter="merge $REPO_DIR/$filter_rel" \
     --exclude='.DS_Store' \
@@ -432,6 +434,10 @@ main() {
       --no-download) NO_DOWNLOAD=1 ;;
       --no-delete) RSYNC_DELETE=0 ;;
       --delete) RSYNC_DELETE=1 ;;
+      --redeploy) REDEPLOY=1 ;;
+      --no-redeploy) REDEPLOY=0 ;;
+      --sync) SYNC=1 ;;
+      --no-sync) SYNC=0 ;;
       --help|-h) usage; exit 0 ;;
       *) log error "Unknown option: $1"; usage; exit 1 ;;
     esac
@@ -478,6 +484,24 @@ main() {
   local stage
   stage="$(build_stage_dir "$platform" "$ui_layer")"
   rsync_stage_to_target "$platform" "$stage" "$target"
+
+  # Post-update hooks (Redeploy / Sync)
+  if [ "$DRY_RUN" -eq 0 ] && [ -f "$REPO_DIR/cmd/platforms.sh" ]; then
+    local redeploy_cmd
+    local sync_cmd
+    redeploy_cmd="$(platform_redeploy_cmd "$platform")"
+    sync_cmd="$(platform_sync_cmd "$platform")"
+
+    if [ "$REDEPLOY" -eq 1 ] && [ -n "$redeploy_cmd" ]; then
+      log info "Triggering redeploy: $redeploy_cmd"
+      sh -c "$redeploy_cmd" || log warn "Redeploy command failed"
+    fi
+
+    if [ "$SYNC" -eq 1 ] && [ -n "$sync_cmd" ]; then
+      log info "Triggering sync: $sync_cmd"
+      sh -c "$sync_cmd" || log warn "Sync command failed"
+    fi
+  fi
 }
 
 main "$@"
