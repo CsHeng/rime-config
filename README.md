@@ -34,12 +34,16 @@ Rime 输入法配置仓库。追踪 **update 不会覆盖**的本地配置层，
 ## 仓库追踪内容（git）
 
 - `*.custom.yaml`：schema patch（通用层）
-- `custom_phrase_user.txt`：各 UI 壳通用置顶词库
+- `custom_phrase.txt`：自定义词组示例（引导用户复制定制）
 - `cmd/common/default.custom.yaml`：通用 UI patch
 - `cmd/<ui>/*.custom.yaml`：UI 特定 patch
 - `cmd/<ui>/{installation.yaml,user.yaml}`：初始化模板
 - `cmd/<ui>/update-rsync.filter`：同步过滤规则
 - `cmd/<ui>/bootstrap-rsync.filter`：初始化过滤规则
+
+## 本地文件（不追踪，但会同步到各 UI 壳）
+
+- `custom_phrase_user.txt`：用户自定义词组（基于 custom_phrase.txt 复制定制）
 
 ## 不追踪
 
