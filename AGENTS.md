@@ -1,7 +1,7 @@
 <INSTRUCTIONS>
 # Repository Intent (rime-config)
 
-目标：把仓库追踪内容收敛为“不会被上游 update 覆盖、且需要跨设备复用”的本地层；上游内容一律通过脚本可重建。
+仓库追踪不会被上游 update 覆盖的本地层，支持跨设备复用。上游内容通过脚本可重建。
 
 ## Definitions
 

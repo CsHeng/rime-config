@@ -1,6 +1,6 @@
 # rime-config
 
-精简追踪：只保留 **update 不会覆盖**、且需要跨设备复用的本地配置层。
+Rime 输入法配置仓库。追踪 **update 不会覆盖**的本地配置层，支持跨设备复用。
 
 - 上游：`https://github.com/amzxyz/rime_wanxiang`
 - 平台配置：`cmd/platforms.yaml`（platform = Rime 的 UI 壳子）
