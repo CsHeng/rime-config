@@ -7,7 +7,9 @@
 !cmd/
 !cmd/**
 !*.custom.yaml
-!custom_phrase_user.txt
+!custom_phrase.txt
+
+custom_phrase_user.txt
 
 # never track secrets / local env
 cmd/.env
