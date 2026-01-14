@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
-CONFIG_YAML="$REPO_DIR/cmd/platforms.yaml"
+CONFIG_YAML="$REPO_DIR/cmd/frontends.yaml"
 
 _require_yq() {
   if ! command -v yq >/dev/null 2>&1; then
@@ -17,14 +17,14 @@ _yq() {
   yq e "$@" "$CONFIG_YAML"
 }
 
-_yq_p() {
+_yq_f() {
   _require_yq >/dev/null
-  local platform="$1"
+  local frontend="$1"
   shift
-  P="$platform" yq e "$@" "$CONFIG_YAML"
+  F="$frontend" yq e "$@" "$CONFIG_YAML"
 }
 
-platform_resolve_auto() {
+frontend_resolve_auto() {
   if [ ! -f "$CONFIG_YAML" ]; then
     echo "none"
     return 0
@@ -40,38 +40,38 @@ platform_resolve_auto() {
 }
 
 
-platform_ui_layer() {
-  local platform="$1"
+frontend_ui_layer() {
+  local frontend="$1"
   if [ ! -f "$CONFIG_YAML" ]; then
-    echo "$platform"
+    echo "$frontend"
     return 0
   fi
 
-  _yq_p "$platform" -r '.platforms[strenv(P)].ui_layer // "none"'
+  _yq_f "$frontend" -r '.frontends[strenv(F)].ui_layer // "none"'
 }
 
-platform_rsync_filter_file() {
-  local platform="$1"
-  if [ ! -f "$CONFIG_YAML" ]; then
-    echo ""
-    return 0
-  fi
-
-  _yq_p "$platform" -r '.platforms[strenv(P)].rsync_filter // ""'
-}
-
-platform_bootstrap_filter_file() {
-  local platform="$1"
+frontend_rsync_filter_file() {
+  local frontend="$1"
   if [ ! -f "$CONFIG_YAML" ]; then
     echo ""
     return 0
   fi
 
-  _yq_p "$platform" -r '.platforms[strenv(P)].bootstrap_filter // ""'
+  _yq_f "$frontend" -r '.frontends[strenv(F)].rsync_filter // ""'
 }
 
-platform_target_dir() {
-  local platform="$1"
+frontend_bootstrap_filter_file() {
+  local frontend="$1"
+  if [ ! -f "$CONFIG_YAML" ]; then
+    echo ""
+    return 0
+  fi
+
+  _yq_f "$frontend" -r '.frontends[strenv(F)].bootstrap_filter // ""'
+}
+
+frontend_target_dir() {
+  local frontend="$1"
 
   if [ ! -f "$CONFIG_YAML" ]; then
     echo ""
@@ -79,7 +79,7 @@ platform_target_dir() {
   fi
 
   local target_path
-  target_path=$(_yq_p "$platform" -r '.platforms[strenv(P)].target_dir // ""')
+  target_path=$(_yq_f "$frontend" -r '.frontends[strenv(F)].target_dir // ""')
 
   # 展开 ~ 为 $HOME
   if [ -n "$target_path" ]; then
@@ -89,24 +89,24 @@ platform_target_dir() {
   echo "$target_path"
 }
 
-platform_redeploy_cmd() {
-  local platform="$1"
+frontend_redeploy_cmd() {
+  local frontend="$1"
   if [ ! -f "$CONFIG_YAML" ]; then
     echo ""
     return 0
   fi
   local cmd
-  cmd="$(_yq_p "$platform" -r '.platforms[strenv(P)].redeploy_cmd // ""')"
+  cmd="$(_yq_f "$frontend" -r '.frontends[strenv(F)].redeploy_cmd // ""')"
   [ -n "$cmd" ] && echo "$cmd" || echo ""
 }
 
-platform_sync_cmd() {
-  local platform="$1"
+frontend_sync_cmd() {
+  local frontend="$1"
   if [ ! -f "$CONFIG_YAML" ]; then
     echo ""
     return 0
   fi
   local cmd
-  cmd="$(_yq_p "$platform" -r '.platforms[strenv(P)].sync_cmd // ""')"
+  cmd="$(_yq_f "$frontend" -r '.frontends[strenv(F)].sync_cmd // ""')"
   [ -n "$cmd" ] && echo "$cmd" || echo ""
 }

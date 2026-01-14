@@ -3,7 +3,7 @@
 Rime 输入法配置仓库。追踪 **update 不会覆盖**的本地配置层，支持跨设备复用。
 
 - 上游：`https://github.com/amzxyz/rime_wanxiang`
-- 平台配置：`cmd/platforms.yaml`（platform = Rime 的 UI 壳子）
+- 前端配置：`cmd/platforms.yaml`（frontend = Rime 的 frontend/壳子）
 
 ## 快速开始
 
@@ -24,12 +24,24 @@ Rime 输入法配置仓库。追踪 **update 不会覆盖**的本地配置层，
 # 执行清理
 ./cmd/update.sh --delete
 
-# 只更新不同步
+# 只更新不同步（不触发 Rime 用户词库同步）
 ./cmd/update.sh --no-sync
 
-# 指定平台
+# 指定前端
 ./cmd/update.sh --platform weasel
 ```
+
+## 配置说明
+
+### 自定义词组路径
+`custom_phrase_user.txt` 的路径在 `wanxiang*.custom.yaml` 中通过 `custom_phrase/user_dict` 指定。**用户需根据本地 Rime 用户目录调整路径**，例如：
+- macOS (Squirrel): `~/Library/Rime/custom_phrase_user.txt`
+- Windows (Weasel): `%APPDATA%\Rime\custom_phrase_user.txt`
+- iOS (Hamster): 通过 app 内部文件管理访问
+
+### 前端同步选项
+- `--sync`：触发 Rime 用户词库同步（默认开启）
+- `--no-sync`：只更新配置文件，不触发用户词库同步
 
 ## 仓库追踪内容（git）
 

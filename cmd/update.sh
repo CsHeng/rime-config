@@ -11,7 +11,7 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
 fi
 
 TARGET_DIR=""
-PLATFORM="auto"
+FRONTEND="auto"
 RUN_INIT=0
 
 DEBUG=0
@@ -53,11 +53,11 @@ log() {
 
 usage() {
   cat <<USAGE
-Usage: $0 [--platform <auto|squirrel|weasel|hamster|hamster3|none>] [--target <dir>] [--init] [--dry-run] [--no-download] [--delete|--no-delete] [--[no-]redeploy] [--[no-]sync] [--debug]
+Usage: $0 [--frontend <auto|squirrel|weasel|hamster|hamster3|none>] [--target <dir>] [--init] [--dry-run] [--no-download] [--delete|--no-delete] [--[no-]redeploy] [--[no-]sync] [--debug]
 
 Flow:
 - Download once -> build/upstream/
-- Merge upstream + local/platform overlays -> build/stage/<platform>/
+- Merge upstream + local/frontend overlays -> build/stage/<frontend>/
 - rsync(filter) stage -> target
 
 Environment:
@@ -91,17 +91,17 @@ rsync_bootstrap_templates() {
   fi
 
   # Get bootstrap filter file
-  if [ ! -f "$REPO_DIR/cmd/platforms.sh" ]; then
-    log error "Missing mapping: cmd/platforms.sh"
+  if [ ! -f "$REPO_DIR/cmd/frontends.sh" ]; then
+    log error "Missing mapping: cmd/frontends.sh"
     return 1
   fi
 
   # shellcheck disable=SC1090
-  source "$REPO_DIR/cmd/platforms.sh"
+  source "$REPO_DIR/cmd/frontends.sh"
   local filter_rel
-  filter_rel="$(platform_bootstrap_filter_file "$resolved")"
+  filter_rel="$(frontend_bootstrap_filter_file "$resolved")"
   if [ -z "$filter_rel" ] || [ ! -f "$REPO_DIR/$filter_rel" ]; then
-    log error "Missing bootstrap filter for platform '$resolved': $filter_rel"
+    log error "Missing bootstrap filter for frontend '$resolved': $filter_rel"
     return 1
   fi
 
@@ -113,16 +113,16 @@ rsync_bootstrap_templates() {
   log info "Initialized templates: $resolved -> $target"
 }
 
-resolve_platform() {
+resolve_frontend() {
   local p="$1"
   if [ "$p" != "auto" ]; then
     echo "$p"
     return 0
   fi
-  if [ -f "$REPO_DIR/cmd/platforms.sh" ]; then
+  if [ -f "$REPO_DIR/cmd/frontends.sh" ]; then
     # shellcheck disable=SC1090
-    source "$REPO_DIR/cmd/platforms.sh"
-    platform_resolve_auto
+    source "$REPO_DIR/cmd/frontends.sh"
+    frontend_resolve_auto
     return 0
   fi
   echo "none"
@@ -341,16 +341,16 @@ update_upstream_cache() {
 }
 
 build_stage_dir() {
-  # upstream + local/platform overlays -> build/stage/<platform>/
-  local platform="$1"
-  local ui_layer="$2" # none|<platform>
+  # upstream + local/frontend overlays -> build/stage/<frontend>/
+  local frontend="$1"
+  local ui_layer="$2" # none|<frontend>
 
-  local stage="$STAGE_ROOT/$platform"
+  local stage="$STAGE_ROOT/$frontend"
   rm -rf "$stage"
   mkdir -p "$stage"
 
-  if [ "$platform" != "none" ]; then
-    # Stage 只做合并（upstream + overlays）；最终写入 target 的过滤由 cmd/<platform>/rsync.filter 负责。
+  if [ "$frontend" != "none" ]; then
+    # Stage 只做合并（upstream + overlays）；最终写入 target 的过滤由 cmd/<frontend>/rsync.filter 负责。
     rsync -a --exclude='.DS_Store' "$UPSTREAM_DIR/" "$stage/"
   fi
 
@@ -387,22 +387,22 @@ build_stage_dir() {
 }
 
 rsync_stage_to_target() {
-  local platform="$1"
+  local frontend="$1"
   local stage="$2"
   local target="$3"
 
-  if [ ! -f "$REPO_DIR/cmd/platforms.sh" ]; then
-    log error "Missing mapping: cmd/platforms.sh"
+  if [ ! -f "$REPO_DIR/cmd/frontends.sh" ]; then
+    log error "Missing mapping: cmd/frontends.sh"
     return 1
   fi
 
   # shellcheck disable=SC1090
-  source "$REPO_DIR/cmd/platforms.sh"
+  source "$REPO_DIR/cmd/frontends.sh"
 
   local filter_rel
-  filter_rel="$(platform_rsync_filter_file "$platform")"
+  filter_rel="$(frontend_rsync_filter_file "$frontend")"
   if [ -z "$filter_rel" ] || [ ! -f "$REPO_DIR/$filter_rel" ]; then
-    log error "Missing rsync filter for platform '$platform': $filter_rel"
+    log error "Missing rsync filter for frontend '$frontend': $filter_rel"
     return 1
   fi
 
@@ -416,7 +416,7 @@ rsync_stage_to_target() {
     rsync_opts+=(-n -i)
   fi
 
-  log info "Stage -> $platform : $target"
+  log info "Stage -> $frontend : $target"
   rsync "${rsync_opts[@]}" \
     --filter="merge $REPO_DIR/$filter_rel" \
     --exclude='.DS_Store' \
@@ -426,7 +426,7 @@ rsync_stage_to_target() {
 main() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      --platform) shift; PLATFORM="${1:-}" ;;
+      --frontend) shift; FRONTEND="${1:-}" ;;
       --target) shift; TARGET_DIR="${1:-}" ;;
       --init) RUN_INIT=1 ;;
       --debug) DEBUG=1 ;;
@@ -445,23 +445,23 @@ main() {
   done
 
   local resolved
-  resolved="$(resolve_platform "$PLATFORM")"
+  resolved="$(resolve_frontend "$FRONTEND")"
 
-  local platform="$resolved"
+  local frontend="$resolved"
   local target="$TARGET_DIR"
-  local ui_layer="$platform"
+  local ui_layer="$frontend"
 
-  if [ -f "$REPO_DIR/cmd/platforms.sh" ]; then
+  if [ -f "$REPO_DIR/cmd/frontends.sh" ]; then
     # shellcheck disable=SC1090
-    source "$REPO_DIR/cmd/platforms.sh"
-    ui_layer="$(platform_ui_layer "$platform")"
+    source "$REPO_DIR/cmd/frontends.sh"
+    ui_layer="$(frontend_ui_layer "$frontend")"
     if [ -z "$target" ]; then
-      target="$(platform_target_dir "$platform")"
+      target="$(frontend_target_dir "$frontend")"
     fi
   fi
 
   if [ -z "$target" ]; then
-    log error "Missing target for platform '$platform' (use --target or set cmd/platforms.yaml)"
+    log error "Missing target for frontend '$frontend' (use --target or set cmd/frontends.yaml)"
     exit 1
   fi
 
@@ -478,19 +478,19 @@ main() {
   fi
 
   if [ "$RUN_INIT" -eq 1 ]; then
-    rsync_bootstrap_templates "$platform" "$target"
+    rsync_bootstrap_templates "$frontend" "$target"
   fi
 
   local stage
-  stage="$(build_stage_dir "$platform" "$ui_layer")"
-  rsync_stage_to_target "$platform" "$stage" "$target"
+  stage="$(build_stage_dir "$frontend" "$ui_layer")"
+  rsync_stage_to_target "$frontend" "$stage" "$target"
 
   # Post-update hooks (Redeploy / Sync)
-  if [ "$DRY_RUN" -eq 0 ] && [ -f "$REPO_DIR/cmd/platforms.sh" ]; then
+  if [ "$DRY_RUN" -eq 0 ] && [ -f "$REPO_DIR/cmd/frontends.sh" ]; then
     local redeploy_cmd
     local sync_cmd
-    redeploy_cmd="$(platform_redeploy_cmd "$platform")"
-    sync_cmd="$(platform_sync_cmd "$platform")"
+    redeploy_cmd="$(frontend_redeploy_cmd "$frontend")"
+    sync_cmd="$(frontend_sync_cmd "$frontend")"
 
     if [ "$REDEPLOY" -eq 1 ] && [ -n "$redeploy_cmd" ]; then
       log info "Triggering redeploy: $redeploy_cmd"

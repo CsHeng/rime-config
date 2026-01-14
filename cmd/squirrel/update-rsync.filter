@@ -15,7 +15,7 @@
 - custom/
 - custom/**
 
-# Keep target clean: exclude other platform UI yaml
+# Keep target clean: exclude other frontend UI yaml
 - weasel.yaml
 - hamster.yaml
 - "简纯+.trime.yaml"
