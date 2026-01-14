@@ -3,7 +3,21 @@
 Rime 输入法配置仓库。追踪 **update 不会覆盖**的本地配置层，支持跨设备复用。
 
 - 上游：`https://github.com/amzxyz/rime_wanxiang`
-- 前端配置：`cmd/platforms.yaml`（frontend = Rime 的 frontend/壳子）
+- 前端配置：`cmd/frontends.yaml`（frontend = Rime 的 frontend/壳子）
+
+## 前置配置
+
+**首次使用前必须编辑 `cmd/frontends.yaml`**，设置各前端的目标目录（`target_dir`）：
+
+```yaml
+frontends:
+  squirrel:
+    target_dir: ~/Library/Rime           # macOS: 修改为你的路径
+  weasel:
+    target_dir: ""                       # Windows: 留空自动检测
+  hamster:
+    target_dir: ~/Library/Mobile Documents/.../RIME/Rime  # iOS: 修改为你的路径
+```
 
 ## 快速开始
 
@@ -28,7 +42,7 @@ Rime 输入法配置仓库。追踪 **update 不会覆盖**的本地配置层，
 ./cmd/update.sh --no-sync
 
 # 指定前端
-./cmd/update.sh --platform weasel
+./cmd/update.sh --frontend weasel
 ```
 
 ## 配置说明
