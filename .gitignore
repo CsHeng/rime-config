@@ -13,6 +13,7 @@ custom_phrase_user.txt
 
 # never track secrets / local env
 cmd/.env
+cmd/frontends.yaml
 
 # local artifacts (target dir content should not be tracked)
 build/

@@ -1,0 +1,52 @@
+# frontend = Rime 的前端/壳子（squirrel / weasel / hamster / hamster3）
+#
+# 配置说明:
+#   1. 复制此文件为 frontends.yaml (cp frontends.yaml.tmpl frontends.yaml)
+#   2. 根据需要修改 target_dir 路径
+#   3. 根据需要调整 active 标志
+#
+# active 标志:
+#   - auto (默认): 系统检测到该平台时自动运行
+#   - true: 强制运行（无论系统检测）
+#   - false: 禁用
+#
+# 示例: 在 macOS 上同时运行 squirrel 和 hamster3
+#   squirrel: active: auto  (自动检测为 darwin 时运行)
+#   hamster3: active: true  (强制运行)
+
+auto:
+  darwin: squirrel
+  windows: weasel
+
+frontends:
+  squirrel:
+    active: auto
+    target_dir: ~/Library/Rime
+    ui_layer: squirrel
+    rsync_filter: cmd/squirrel/update-rsync.filter
+    bootstrap_filter: cmd/squirrel/bootstrap-rsync.filter
+    redeploy_cmd: '"/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel" --reload'
+    sync_cmd: '"/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel" --sync'
+
+  weasel:
+    active: auto
+    target_dir: ""
+    ui_layer: weasel
+    rsync_filter: cmd/weasel/update-rsync.filter
+    bootstrap_filter: cmd/weasel/bootstrap-rsync.filter
+    redeploy_cmd: '"WeaselDeployer.exe" /deploy'
+    sync_cmd: '"WeaselDeployer.exe" /sync'
+
+  hamster:
+    active: auto
+    target_dir: ~/Library/Mobile Documents/iCloud~dev~fuxiao~app~hamsterapp/Documents/RIME/Rime
+    ui_layer: hamster
+    rsync_filter: cmd/hamster/update-rsync.filter
+    bootstrap_filter: cmd/hamster/bootstrap-rsync.filter
+
+  hamster3:
+    active: auto
+    target_dir: ~/Library/Mobile Documents/iCloud~com~ihsiao~apps~Hamster3/Documents/RimeUserData/rime-wanxiang
+    ui_layer: hamster3
+    rsync_filter: cmd/hamster3/update-rsync.filter
+    bootstrap_filter: cmd/hamster3/bootstrap-rsync.filter

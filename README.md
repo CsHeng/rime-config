@@ -7,17 +7,28 @@ Rime 输入法配置仓库。追踪 **update 不会覆盖**的本地配置层，
 
 ## 前置配置
 
-**首次使用前必须编辑 `cmd/frontends.yaml`**，设置各前端的目标目录（`target_dir`）：
+**首次使用前必须创建配置文件：**
+
+```bash
+cp cmd/frontends.yaml.tmpl cmd/frontends.yaml
+```
+
+编辑 `cmd/frontends.yaml`，设置各前端的目标目录（`target_dir`）：
 
 ```yaml
 frontends:
   squirrel:
-    target_dir: ~/Library/Rime           # macOS: 修改为你的路径
-  weasel:
-    target_dir: ""                       # Windows: 留空自动检测
-  hamster:
-    target_dir: ~/Library/Mobile Documents/.../RIME/Rime  # iOS: 修改为你的路径
+    active: auto       # macOS 上自动运行
+    target_dir: ~/Library/Rime
+  hamster3:
+    active: true       # 强制运行（可与 squirrel 同时使用）
+    target_dir: ~/Library/Mobile Documents/.../rime-wanxiang
 ```
+
+**active 标志说明：**
+- `auto` (默认)：系统检测到该平台时自动运行
+- `true`：强制运行（无论系统检测，可多选）
+- `false`：禁用
 
 ## 快速开始
 
@@ -25,7 +36,7 @@ frontends:
 # 首次使用（初始化 + 更新）
 ./cmd/update.sh --init
 
-# 日常更新
+# 日常更新（自动处理所有 active frontends）
 ./cmd/update.sh
 ```
 
@@ -40,9 +51,6 @@ frontends:
 
 # 只更新不同步（不触发 Rime 用户词库同步）
 ./cmd/update.sh --no-sync
-
-# 指定前端
-./cmd/update.sh --frontend weasel
 ```
 
 ## 配置说明
@@ -67,12 +75,13 @@ frontends:
 - `cmd/<ui>/update-rsync.filter`：同步过滤规则
 - `cmd/<ui>/bootstrap-rsync.filter`：初始化过滤规则
 
-## 本地文件（不追踪，但会同步到各 UI 壳）
+## 本地文件
 
 - `custom_phrase_user.txt`：用户自定义词组（基于 custom_phrase.txt 复制定制）
 
 ## 不追踪
 
+- `cmd/frontends.yaml`：用户本地配置（从 frontends.yaml.tmpl 复制）
 - 上游文件（通过 `update.sh` 可重建）
 - `*.userdb/` 用户词库数据库
 - `build/`（下载缓存、marker、stage 等）

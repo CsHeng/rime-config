@@ -4,7 +4,8 @@
 
 ```
 cmd/
-├── frontends.yaml          # 前端配置
+├── frontends.yaml.tmpl    # 前端配置模板
+├── frontends.yaml          # 用户本地配置（从模板复制）
 ├── frontends.sh            # YAML 读取薄封装（bash 函数）
 ├── update.sh               # 日常更新 + 可选初始化
 ├── common/                 # 通用层配置
@@ -28,14 +29,30 @@ cmd/
 - `frontend_target_dir`：获取目标目录
 - `frontend_redeploy_cmd`：获取重新部署命令
 - `frontend_sync_cmd`：获取 Rime 用户词库同步命令
+- `frontend_active_list`：获取所有启用的 frontend 列表
 
 ### update.sh
 **流程：**
 ```
 1. 下载 upstream → build/upstream/
-2. 合并 upstream + 本地层 → build/stage/<frontend>/
-3. rsync + filter → target/
-4. 触发 redeploy/sync（可选）
+2. 对每个 active frontend:
+   - 合并 upstream + 本地层 → build/stage/<frontend>/
+   - rsync + filter → target/
+   - 触发 redeploy/sync（可选）
+```
+
+**Frontend 激活机制：**
+- `active: auto` (默认)：系统检测到该平台时自动运行
+- `active: true`：强制运行，支持同时激活多个 frontend
+- `active: false`：禁用
+
+**示例：macOS 上同时运行 squirrel 和 hamster3**
+```yaml
+frontends:
+  squirrel:
+    active: auto  # darwin 自动检测
+  hamster3:
+    active: true  # 强制启用
 ```
 
 **约定：**
@@ -61,6 +78,7 @@ cmd/
 ```yaml
 frontends:
   squirrel:
+    active: auto
     target_dir: ~/Library/Rime
     ui_layer: squirrel
     rsync_filter: cmd/squirrel/update-rsync.filter

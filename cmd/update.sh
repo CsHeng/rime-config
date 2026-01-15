@@ -11,7 +11,6 @@ if [ -f "$SCRIPT_DIR/.env" ]; then
 fi
 
 TARGET_DIR=""
-FRONTEND="auto"
 RUN_INIT=0
 
 DEBUG=0
@@ -53,12 +52,17 @@ log() {
 
 usage() {
   cat <<USAGE
-Usage: $0 [--frontend <auto|squirrel|weasel|hamster|hamster3|none>] [--target <dir>] [--init] [--dry-run] [--no-download] [--delete|--no-delete] [--[no-]redeploy] [--[no-]sync] [--debug]
+Usage: $0 [--target <dir>] [--init] [--dry-run] [--no-download] [--delete|--no-delete] [--[no-]redeploy] [--[no-]sync] [--debug]
 
 Flow:
 - Download once -> build/upstream/
 - Merge upstream + local/frontend overlays -> build/stage/<frontend>/
 - rsync(filter) stage -> target
+
+Active frontends are controlled by cmd/frontends.yaml:
+  - active: auto (default) - run if system detects it
+  - active: true - always run
+  - active: false - never run
 
 Environment:
   GITHUB_TOKEN     # GitHub API 认证（可选，避免 API 限流）
@@ -426,7 +430,6 @@ rsync_stage_to_target() {
 main() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      --frontend) shift; FRONTEND="${1:-}" ;;
       --target) shift; TARGET_DIR="${1:-}" ;;
       --init) RUN_INIT=1 ;;
       --debug) DEBUG=1 ;;
@@ -444,26 +447,23 @@ main() {
     shift
   done
 
-  local resolved
-  resolved="$(resolve_frontend "$FRONTEND")"
-
-  local frontend="$resolved"
-  local target="$TARGET_DIR"
-  local ui_layer="$frontend"
-
-  if [ -f "$REPO_DIR/cmd/frontends.sh" ]; then
-    # shellcheck disable=SC1090
-    source "$REPO_DIR/cmd/frontends.sh"
-    ui_layer="$(frontend_ui_layer "$frontend")"
-    if [ -z "$target" ]; then
-      target="$(frontend_target_dir "$frontend")"
-    fi
-  fi
-
-  if [ -z "$target" ]; then
-    log error "Missing target for frontend '$frontend' (use --target or set cmd/frontends.yaml)"
+  if [ ! -f "$REPO_DIR/cmd/frontends.sh" ]; then
+    log error "Missing cmd/frontends.sh"
     exit 1
   fi
+
+  # shellcheck disable=SC1090
+  source "$REPO_DIR/cmd/frontends.sh"
+
+  local active_frontends
+  active_frontends="$(frontend_active_list)"
+
+  if [ -z "$active_frontends" ] || [ "$active_frontends" = "none" ]; then
+    log error "No active frontends found. Configure active: true in cmd/frontends.yaml"
+    exit 1
+  fi
+
+  log info "Active frontends: $(echo "$active_frontends" | tr '\n' ' ')"
 
   ensure_dirs
   require_cmd rsync
@@ -477,31 +477,55 @@ main() {
     fi
   fi
 
-  if [ "$RUN_INIT" -eq 1 ]; then
-    rsync_bootstrap_templates "$frontend" "$target"
-  fi
+  # Process each active frontend
+  while IFS= read -r frontend; do
+    [ -z "$frontend" ] && continue
 
-  local stage
-  stage="$(build_stage_dir "$frontend" "$ui_layer")"
-  rsync_stage_to_target "$frontend" "$stage" "$target"
+    log info "=== Processing frontend: $frontend ==="
 
-  # Post-update hooks (Redeploy / Sync)
-  if [ "$DRY_RUN" -eq 0 ] && [ -f "$REPO_DIR/cmd/frontends.sh" ]; then
-    local redeploy_cmd
-    local sync_cmd
-    redeploy_cmd="$(frontend_redeploy_cmd "$frontend")"
-    sync_cmd="$(frontend_sync_cmd "$frontend")"
+    # Get ui_layer
+    local ui_layer
+    ui_layer="$(frontend_ui_layer "$frontend")"
 
-    if [ "$REDEPLOY" -eq 1 ] && [ -n "$redeploy_cmd" ]; then
-      log info "Triggering redeploy: $redeploy_cmd"
-      sh -c "$redeploy_cmd" || log warn "Redeploy command failed"
+    # Get target directory
+    local target="$TARGET_DIR"
+    if [ -z "$target" ]; then
+      target="$(frontend_target_dir "$frontend")"
     fi
 
-    if [ "$SYNC" -eq 1 ] && [ -n "$sync_cmd" ]; then
-      log info "Triggering sync: $sync_cmd"
-      sh -c "$sync_cmd" || log warn "Sync command failed"
+    if [ -z "$target" ]; then
+      log error "Missing target for frontend '$frontend' (use --target or set in cmd/frontends.yaml)"
+      continue
     fi
-  fi
+
+    if [ "$RUN_INIT" -eq 1 ]; then
+      rsync_bootstrap_templates "$frontend" "$target"
+    fi
+
+    local stage
+    stage="$(build_stage_dir "$frontend" "$ui_layer")"
+    rsync_stage_to_target "$frontend" "$stage" "$target"
+
+    # Post-update hooks
+    if [ "$DRY_RUN" -eq 0 ]; then
+      local redeploy_cmd
+      local sync_cmd
+      redeploy_cmd="$(frontend_redeploy_cmd "$frontend")"
+      sync_cmd="$(frontend_sync_cmd "$frontend")"
+
+      if [ "$REDEPLOY" -eq 1 ] && [ -n "$redeploy_cmd" ]; then
+        log info "Triggering redeploy: $redeploy_cmd"
+        sh -c "$redeploy_cmd" || log warn "Redeploy command failed"
+      fi
+
+      if [ "$SYNC" -eq 1 ] && [ -n "$sync_cmd" ]; then
+        log info "Triggering sync: $sync_cmd"
+        sh -c "$sync_cmd" || log warn "Sync command failed"
+      fi
+    fi
+
+    log info "=== Completed: $frontend ==="
+  done <<< "$active_frontends"
 }
 
 main "$@"

@@ -110,3 +110,44 @@ frontend_sync_cmd() {
   cmd="$(_yq_f "$frontend" -r '.frontends[strenv(F)].sync_cmd // ""')"
   [ -n "$cmd" ] && echo "$cmd" || echo ""
 }
+
+frontend_active_list() {
+  if [ ! -f "$CONFIG_YAML" ]; then
+    echo "none"
+    return 0
+  fi
+
+  local active_frontends=()
+  local auto_frontend
+  auto_frontend="$(frontend_resolve_auto)"
+
+  # Get all frontends with active: true
+  local true_list
+  true_list=$(_yq -r '.frontends | to_entries[] | select(.value.active == true) | .key' "$CONFIG_YAML" 2>/dev/null | grep -v '^---$' | grep -v '^$' || true)
+
+  # Get all frontends with active: auto
+  local auto_list
+  auto_list=$(_yq -r '.frontends | to_entries[] | select(.value.active == "auto") | .key' "$CONFIG_YAML" 2>/dev/null | grep -v '^---$' | grep -v '^$' || true)
+
+  # Add all active: true frontends
+  while IFS= read -r f; do
+    [ -n "$f" ] && active_frontends+=("$f")
+  done <<< "$true_list"
+
+  # Add auto-detected frontend if it exists and has active: auto
+  if [ -n "$auto_frontend" ] && [ "$auto_frontend" != "none" ]; then
+    while IFS= read -r f; do
+      if [ "$f" = "$auto_frontend" ]; then
+        active_frontends+=("$f")
+        break
+      fi
+    done <<< "$auto_list"
+  fi
+
+  if [ ${#active_frontends[@]} -eq 0 ]; then
+    echo "none"
+  else
+    # Deduplicate and output
+    printf '%s\n' "${active_frontends[@]}" | sort -u
+  fi
+}

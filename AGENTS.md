@@ -11,11 +11,21 @@
 
 ## Required Files
 
-- `cmd/frontends.yaml`：前端配置
+- `cmd/frontends.yaml.tmpl`：前端配置模板
 - `cmd/frontends.sh`：YAML 读取薄封装（内部用 `yq` 读取 YAML，提供 bash 函数给脚本调用）
-- `cmd/init.sh`：初始化脚本
 - `cmd/update.sh`：日常更新脚本
 - per-frontend rsync filter：`cmd/<frontend>/update-rsync.filter` (update) / `bootstrap-rsync.filter` (init)
+
+## Setup: 首次配置
+
+**用户必须创建本地配置文件：**
+
+```bash
+cp cmd/frontends.yaml.tmpl cmd/frontends.yaml
+# 编辑 cmd/frontends.yaml 设置 target_dir 和 active 标志
+```
+
+`cmd/frontends.yaml` 不追踪，用户可根据本地需求修改。
 
 ## Flow: init (optional)
 
@@ -32,9 +42,23 @@
 - `build/markers/`：版本 marker
 - `build/upstream/`：上游解包后的目录（rsync 的 upstream 源）
 
-2) 对每个 frontend，生成一份可重建的"合并结果"目录：
+2) 对每个 active frontend，生成一份可重建的"合并结果"目录：
 - `build/stage/<frontend>/` = upstream + 本地通用层 +（可选）UI 层
 - 该目录可随时删除并通过流程重新生成
+
+**Frontend 激活机制**（在 `cmd/frontends.yaml` 中配置）：
+- `active: auto` (默认)：系统检测到该平台时自动运行
+- `active: true`：强制运行，支持同时激活多个 frontend
+- `active: false`：禁用
+
+示例：在 macOS 上同时部署到 squirrel 和 hamster3：
+```yaml
+frontends:
+  squirrel:
+    active: auto  # darwin 自动检测
+  hamster3:
+    active: true  # 强制启用
+```
 
 3) **frontend 资源 + 下载的资源** 必须一起经过 per-frontend filter，通过一次 `rsync` 写入 target：
 - `rsync build/stage/<frontend>/ -> <target>/` + `--filter="merge cmd/<frontend>/update-rsync.filter"`
@@ -48,4 +72,6 @@
 
 - 能通过 `update.sh` 下载/生成的上游内容：不追踪
 - 只追踪 update 不会覆盖的本地层（patch/词库）与脚本/配置
+- `cmd/frontends.yaml`：不追踪（用户本地配置，从 `.tmpl` 复制）
+
 
