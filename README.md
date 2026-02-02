@@ -40,6 +40,32 @@ frontends:
 ./cmd/update.sh
 ```
 
+## Windows (Weasel) / Git Bash + Scoop
+
+依赖（Scoop）：
+
+```bash
+scoop install cwrsync yq jq unzip curl
+```
+
+配置（`cmd/frontends.yaml`，Windows 下 `target_dir` **只接受** Git Bash 路径风格 `/c/...`）：
+
+```yaml
+frontends:
+  weasel:
+    active: auto
+    # Weasel 默认目录：%APPDATA%\\Rime
+    target_dir: /c/Users/<User>/AppData/Roaming/Rime
+```
+
+运行建议（先 dry-run 看日志）：
+
+```bash
+./cmd/update.sh --init --debug
+./cmd/update.sh --dry-run --debug
+./cmd/update.sh --debug
+```
+
 ## 常用命令
 
 ```bash
@@ -58,7 +84,7 @@ frontends:
 ### 自定义词组路径
 `custom_phrase_user.txt` 的路径在 `wanxiang*.custom.yaml` 中通过 `custom_phrase/user_dict` 指定。**用户需根据本地 Rime 用户目录调整路径**，例如：
 - macOS (Squirrel): `~/Library/Rime/custom_phrase_user.txt`
-- Windows (Weasel): `%APPDATA%\Rime\custom_phrase_user.txt`
+- Windows (Weasel / Git Bash): `/c/Users/<User>/AppData/Roaming/Rime/custom_phrase_user.txt`（对应 `%APPDATA%\Rime\custom_phrase_user.txt`）
 - iOS (Hamster): 通过 app 内部文件管理访问
 
 ### 前端同步选项

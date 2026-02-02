@@ -60,6 +60,10 @@ frontends:
 - 每个 frontend 维护独立的 filter 文件
 - 默认不使用 `--delete`，需手动启用
 
+Windows 说明（Weasel / Git Bash + Scoop）：
+- 建议用 Scoop 安装依赖：`scoop install cwrsync yq jq unzip curl`
+- `cmd/frontends.yaml` 中 Windows 的 `target_dir` 只接受 `/c/...` 风格（避免 `C:\...` 被 rsync 解析为 remote 或触发 argv 路径转换问题）
+
 ## Filter 规则
 
 ### update-rsync.filter（日常更新）

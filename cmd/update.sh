@@ -38,15 +38,15 @@ log() {
   local message="$*"
 
   case "$level" in
-    info) echo -e "${GREEN}[INFO]${NC} $message" >&2 ;;
-    warn) echo -e "${YELLOW}[WARN]${NC} $message" >&2 ;;
-    error) echo -e "${RED}[ERROR]${NC} $message" >&2 ;;
+    info) printf "${GREEN}%s${NC}\n" "$message" >&2 ;;
+    warn) printf "${YELLOW}%s${NC}\n" "$message" >&2 ;;
+    error) printf "${RED}ERROR: %s${NC}\n" "$message" >&2 ;;
     debug)
       if [ "$DEBUG" -eq 1 ]; then
-        echo -e "[DEBUG] $message" >&2
+        printf "DEBUG: %s\n" "$message" >&2
       fi
       ;;
-    *) echo "$message" >&2 ;;
+    *) printf "%s\n" "$message" >&2 ;;
   esac
 }
 
@@ -74,6 +74,142 @@ require_cmd() {
   if ! command -v "$c" >/dev/null 2>&1; then
     log error "Missing dependency: $c"
     exit 1
+  fi
+}
+
+RSYNC_RUNTIME=""
+RSYNC_EXE_PATH=""
+
+detect_rsync_runtime() {
+  if [ -n "${RSYNC_RUNTIME:-}" ]; then
+    return 0
+  fi
+
+  RSYNC_EXE_PATH="$(command -v rsync 2>/dev/null || true)"
+  RSYNC_RUNTIME="posix"
+
+  local os
+  os=$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]' || echo "")
+  case "$os" in
+    msys*|mingw*|cygwin*)
+      local exe_lower=""
+      exe_lower="$(printf '%s' "${RSYNC_EXE_PATH:-}" | tr '[:upper:]' '[:lower:]')"
+      if [[ "$exe_lower" == *cwrsync* ]]; then
+        RSYNC_RUNTIME="cygwin"
+      else
+        if rsync --version 2>/dev/null | tr '[:upper:]' '[:lower:]' | grep -q 'cygwin'; then
+          RSYNC_RUNTIME="cygwin"
+        fi
+      fi
+      ;;
+  esac
+
+  if [ "$DEBUG" -eq 1 ]; then
+    log debug "rsync: ${RSYNC_EXE_PATH:-<not found>}"
+    log debug "rsync runtime: $RSYNC_RUNTIME"
+    local ver_line
+    ver_line="$(rsync --version 2>/dev/null | head -n1 || true)"
+    [ -n "$ver_line" ] && log debug "$ver_line"
+  fi
+}
+
+rsync_path_normalize() {
+  local p="$1"
+  detect_rsync_runtime
+
+  if [ "$RSYNC_RUNTIME" != "cygwin" ]; then
+    printf '%s' "$p"
+    return 0
+  fi
+
+  if [[ "$p" =~ ^/([a-zA-Z])/(.*)$ ]]; then
+    local drive="${BASH_REMATCH[1]}"
+    local rest="${BASH_REMATCH[2]}"
+    drive="$(printf '%s' "$drive" | tr '[:upper:]' '[:lower:]')"
+    printf '/cygdrive/%s/%s' "$drive" "$rest"
+    return 0
+  fi
+
+  printf '%s' "$p"
+}
+
+strip_trailing_slashes() {
+  local p="$1"
+  while [[ "$p" == */ ]]; do
+    p="${p%/}"
+  done
+  printf '%s' "$p"
+}
+
+assert_not_same_dir() {
+  local src_raw="$1"
+  local dst_raw="$2"
+  detect_rsync_runtime
+
+  local src_rsync
+  local dst_rsync
+  src_rsync="$(strip_trailing_slashes "$(rsync_path_normalize "$src_raw")")"
+  dst_rsync="$(strip_trailing_slashes "$(rsync_path_normalize "$dst_raw")")"
+
+  if [ "$src_rsync" = "$dst_rsync" ]; then
+    log error "Refusing to rsync: source and destination resolve to the same path"
+    log error "src(raw):  $src_raw"
+    log error "dst(raw):  $dst_raw"
+    log error "src(rsync): $src_rsync"
+    log error "dst(rsync): $dst_rsync"
+    return 1
+  fi
+}
+
+rsync_run() {
+  detect_rsync_runtime
+
+  local -a args=()
+  local i=0
+  local a
+  for a in "$@"; do
+    args+=("$a")
+    i=$((i + 1))
+  done
+
+  # cwRsync (Cygwin) also needs option-embedded paths normalized (e.g. --filter=merge <file>)
+  if [ "$RSYNC_RUNTIME" = "cygwin" ]; then
+    for i in "${!args[@]}"; do
+      if [[ "${args[$i]}" == --filter=merge\ * ]]; then
+        local merge_path="${args[$i]#--filter=merge }"
+        local merge_norm
+        merge_norm="$(rsync_path_normalize "$merge_path")"
+        args[$i]="--filter=merge $merge_norm"
+        if [ "$DEBUG" -eq 1 ] && [ "$merge_path" != "$merge_norm" ]; then
+          log debug "rsync filter: $merge_path -> $merge_norm"
+        fi
+      fi
+    done
+  fi
+
+  local -a operand_idx=()
+  for i in "${!args[@]}"; do
+    if [[ "${args[$i]}" != -* ]]; then
+      operand_idx+=("$i")
+    fi
+  done
+
+  if [ "${#operand_idx[@]}" -ge 2 ]; then
+    for i in "${operand_idx[@]}"; do
+      local orig="${args[$i]}"
+      local norm
+      norm="$(rsync_path_normalize "$orig")"
+      args[$i]="$norm"
+      if [ "$DEBUG" -eq 1 ] && [ "$orig" != "$norm" ]; then
+        log debug "rsync path: $orig -> $norm"
+      fi
+    done
+  fi
+
+  if [ "$RSYNC_RUNTIME" = "cygwin" ]; then
+    MSYS2_ARG_CONV_EXCL='*' rsync "${args[@]}"
+  else
+    rsync "${args[@]}"
   fi
 }
 
@@ -110,7 +246,7 @@ rsync_bootstrap_templates() {
   fi
 
   mkdir -p "$target"
-  rsync -a --ignore-existing \
+  rsync_run -a --ignore-existing \
     --filter="merge $REPO_DIR/$filter_rel" \
     "$tpl_dir" "$target/"
 
@@ -251,7 +387,7 @@ extract_zip_flatten() {
   unzip -o "$zip" -d "$tmp" >/dev/null
 
   find "$tmp" -type f -maxdepth 2 -print0 | while IFS= read -r -d '' f; do
-    rsync -a "$f" "$dest/"
+    rsync_run -a "$f" "$dest/"
   done
 
   rm -rf "$tmp"
@@ -337,7 +473,7 @@ update_upstream_cache() {
   if [ "$grammar_version" != "$grammar_stored" ] || [ ! -f "$UPSTREAM_DIR/$grammar_asset" ]; then
     download_to_cache "$grammar_url" "$grammar_file"
     log info "Updating grammar -> build/upstream/$grammar_asset"
-    rsync -a "$grammar_file" "$UPSTREAM_DIR/$grammar_asset"
+    rsync_run -a "$grammar_file" "$UPSTREAM_DIR/$grammar_asset"
     marker_set "$grammar_marker" "$grammar_version"
   else
     log info "Grammar up to date: $grammar_version"
@@ -355,25 +491,25 @@ build_stage_dir() {
 
   if [ "$frontend" != "none" ]; then
     # Stage 只做合并（upstream + overlays）；最终写入 target 的过滤由 cmd/<frontend>/rsync.filter 负责。
-    rsync -a --exclude='.DS_Store' "$UPSTREAM_DIR/" "$stage/"
+    rsync_run -a --exclude='.DS_Store' "$UPSTREAM_DIR/" "$stage/"
   fi
 
   # local layer (repo tracked)
   if [ -f "$REPO_DIR/custom_phrase_user.txt" ]; then
-    rsync -a "$REPO_DIR/custom_phrase_user.txt" "$stage/"
+    rsync_run -a "$REPO_DIR/custom_phrase_user.txt" "$stage/"
   fi
 
   shopt -s nullglob
   local f
   for f in "$REPO_DIR"/*.custom.yaml; do
-    rsync -a "$f" "$stage/"
+    rsync_run -a "$f" "$stage/"
   done
   shopt -u nullglob
 
   # UI overlays (only when enabled)
   if [ -n "$ui_layer" ] && [ "$ui_layer" != "none" ]; then
     if [ -f "$REPO_DIR/cmd/common/default.custom.yaml" ]; then
-      rsync -a "$REPO_DIR/cmd/common/default.custom.yaml" "$stage/default.custom.yaml"
+      rsync_run -a "$REPO_DIR/cmd/common/default.custom.yaml" "$stage/default.custom.yaml"
     fi
 
     local tpl_dir="$REPO_DIR/cmd/$ui_layer"
@@ -382,7 +518,7 @@ build_stage_dir() {
       local files=("$tpl_dir"/*.custom.yaml)
       shopt -u nullglob
       if [ "${#files[@]}" -gt 0 ]; then
-        rsync -a "${files[@]}" "$stage/"
+        rsync_run -a "${files[@]}" "$stage/"
       fi
     fi
   fi
@@ -421,7 +557,12 @@ rsync_stage_to_target() {
   fi
 
   log info "Stage -> $frontend : $target"
-  rsync "${rsync_opts[@]}" \
+  assert_not_same_dir "$stage" "$target"
+  if [ "$DEBUG" -eq 1 ]; then
+    log debug "Stage(rsync): $(rsync_path_normalize "$stage/")"
+    log debug "Target(rsync): $(rsync_path_normalize "$target/")"
+  fi
+  rsync_run "${rsync_opts[@]}" \
     --filter="merge $REPO_DIR/$filter_rel" \
     --exclude='.DS_Store' \
     "$stage/" "$target/"

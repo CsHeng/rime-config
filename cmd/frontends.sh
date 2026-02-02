@@ -5,9 +5,15 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
 CONFIG_YAML="$REPO_DIR/cmd/frontends.yaml"
 
+# Color codes (exported for external use)
+export GREEN='\033[0;32m'
+export YELLOW='\033[0;33m'
+export RED='\033[0;31m'
+export NC='\033[0m'
+
 _require_yq() {
   if ! command -v yq >/dev/null 2>&1; then
-    echo "Missing dependency: yq (mikefarah/yq v4)" >&2
+    printf "${RED}ERROR: Missing dependency: yq (mikefarah/yq v4)${NC}\n" >&2
     return 1
   fi
 }
@@ -85,6 +91,28 @@ frontend_target_dir() {
   if [ -n "$target_path" ]; then
     target_path="${target_path/#\~/$HOME}"
   fi
+
+  # Windows: only accept Git Bash style /c/... paths (avoid rsync's remote syntax and argv path conversion issues)
+  local os
+  os=$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]' || echo "")
+  case "$os" in
+    msys*|mingw*|cygwin*)
+      if [ -n "$target_path" ]; then
+        if [[ "$target_path" == *:* ]] || [[ "$target_path" == *\\* ]]; then
+          printf "${RED}ERROR: Windows target_dir must use /c/... style paths (do not use C:\\\\... or C:...)${NC}\n" >&2
+          printf "  got: %s\n" "$target_path" >&2
+          printf "  example: /c/Users/<User>/AppData/Roaming/Rime\n" >&2
+          return 1
+        fi
+        if [[ ! "$target_path" =~ ^/[a-zA-Z]/ ]]; then
+          printf "${RED}ERROR: Windows target_dir must start with /<drive>/ (e.g. /c/...)${NC}\n" >&2
+          printf "  got: %s\n" "$target_path" >&2
+          printf "  example: /c/Users/<User>/AppData/Roaming/Rime\n" >&2
+          return 1
+        fi
+      fi
+      ;;
+  esac
 
   echo "$target_path"
 }

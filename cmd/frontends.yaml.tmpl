@@ -30,7 +30,9 @@ frontends:
 
   weasel:
     active: auto
-    target_dir: ""
+    # Windows (Git Bash): use /c/... style paths (do not use C:\... or C:...).
+    # Example (Weasel default): /c/Users/<User>/AppData/Roaming/Rime
+    target_dir: "/c/Users/<User>/AppData/Roaming/Rime"
     ui_layer: weasel
     rsync_filter: cmd/weasel/update-rsync.filter
     bootstrap_filter: cmd/weasel/bootstrap-rsync.filter
