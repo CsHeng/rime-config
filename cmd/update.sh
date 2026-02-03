@@ -386,7 +386,7 @@ extract_zip_flatten() {
   mkdir -p "$tmp" "$dest"
   unzip -o "$zip" -d "$tmp" >/dev/null
 
-  find "$tmp" -type f -maxdepth 2 -print0 | while IFS= read -r -d '' f; do
+  find "$tmp" -maxdepth 2 -type f -print0 | while IFS= read -r -d '' f; do
     rsync_run -a "$f" "$dest/"
   done
 

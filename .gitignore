@@ -9,6 +9,14 @@
 !*.custom.yaml
 !custom_phrase.txt
 
+# skin / jsonnet
+!resources/
+!resources/**
+
+# generated keyboard files (jsonnet output)
+resources/**/.*.keyboard
+resources/**/scripts/
+
 custom_phrase_user.txt
 
 # never track secrets / local env
