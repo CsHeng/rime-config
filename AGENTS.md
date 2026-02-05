@@ -14,6 +14,7 @@
 - `cmd/frontends.yaml.tmpl`：前端配置模板
 - `cmd/frontends.sh`：YAML 读取薄封装（内部用 `yq` 读取 YAML，提供 bash 函数给脚本调用）
 - `cmd/update.sh`：日常更新脚本
+- `cmd/sync-userdict.sh`：用户词库云同步脚本（Unison 双向同步 iCloud ↔ OneDrive）
 - per-frontend rsync filter：`cmd/<frontend>/update-rsync.filter` (update) / `bootstrap-rsync.filter` (init)
 
 ## Setup: 首次配置
@@ -67,6 +68,37 @@ frontends:
 4) **Post-update Hooks**：
 - 根据 `cmd/frontends.yaml` 配置自动执行 `redeploy_cmd`（默认开启，可用 `--no-redeploy` 关闭）
 - 根据 `cmd/frontends.yaml` 配置自动执行 Rime 用户词库同步（`sync_cmd`，默认开启，可用 `--no-sync` 关闭）
+- 可选：`--cloud-sync` 触发云端用户词库同步（iCloud ↔ OneDrive）
+
+## Flow: userdict cloud sync (optional)
+
+`cmd/sync-userdict.sh` 使用 Unison 实现 iCloud ↔ OneDrive 双向同步：
+
+```
+Windows (weasel) ←→ OneDrive ←→ macOS (squirrel) ←→ iCloud ←→ iOS (hamster/hamster3)
+```
+
+**配置（`cmd/frontends.yaml`）：**
+
+```yaml
+userdict_sync:
+  icloud: ~/Library/Mobile Documents/com~apple~CloudDocs/RimeUserSync
+  onedrive:
+    darwin: ~/Library/CloudStorage/OneDrive-Personal/Apps/RimeSync
+    windows: /c/Users/<User>/OneDrive/Apps/RimeSync
+```
+
+**sync_dir 结构**（以 `installation_id` 区分设备）：
+
+```
+RimeUserSync/
+├── Squirrel-CsHeng's-Macbook-M1-Max/
+├── Weasel-CsHeng's-PC/
+├── Hamster-xxx/
+└── ...
+```
+
+**依赖：** `unison`（macOS: `brew install unison`）
 
 ## Git Tracking Policy
 

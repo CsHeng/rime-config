@@ -19,6 +19,7 @@ NO_DOWNLOAD=0
 RSYNC_DELETE=0
 REDEPLOY=1
 SYNC=1
+CLOUD_SYNC=0
 
 BUILD_DIR="$REPO_DIR/build"
 TMP_DIR="$BUILD_DIR/tmp"
@@ -52,7 +53,7 @@ log() {
 
 usage() {
   cat <<USAGE
-Usage: $0 [--target <dir>] [--init] [--dry-run] [--no-download] [--delete|--no-delete] [--[no-]redeploy] [--[no-]sync] [--debug]
+Usage: $0 [--target <dir>] [--init] [--dry-run] [--no-download] [--delete|--no-delete] [--[no-]redeploy] [--[no-]sync] [--cloud-sync] [--debug]
 
 Flow:
 - Download once -> build/upstream/
@@ -63,6 +64,9 @@ Active frontends are controlled by cmd/frontends.yaml:
   - active: auto (default) - run if system detects it
   - active: true - always run
   - active: false - never run
+
+Options:
+  --cloud-sync       Sync user dictionaries between iCloud and OneDrive (macOS only)
 
 Environment:
   GITHUB_TOKEN     # GitHub API 认证（可选，避免 API 限流）
@@ -582,6 +586,7 @@ main() {
       --no-redeploy) REDEPLOY=0 ;;
       --sync) SYNC=1 ;;
       --no-sync) SYNC=0 ;;
+      --cloud-sync) CLOUD_SYNC=1 ;;
       --help|-h) usage; exit 0 ;;
       *) log error "Unknown option: $1"; usage; exit 1 ;;
     esac
@@ -667,6 +672,18 @@ main() {
 
     log info "=== Completed: $frontend ==="
   done <<< "$active_frontends"
+
+  # Cloud sync (optional)
+  if [ "$CLOUD_SYNC" -eq 1 ]; then
+    local sync_opts=()
+    [ "$DRY_RUN" -eq 1 ] && sync_opts+=(--dry-run)
+    [ "$DEBUG" -eq 1 ] && sync_opts+=(--debug)
+    if [ -f "$SCRIPT_DIR/sync-userdict.sh" ]; then
+      "$SCRIPT_DIR/sync-userdict.sh" ${sync_opts[@]+"${sync_opts[@]}"}
+    else
+      log warn "sync-userdict.sh not found, skipping cloud sync"
+    fi
+  fi
 }
 
 main "$@"

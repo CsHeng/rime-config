@@ -77,6 +77,42 @@ frontends:
 
 # 只更新不同步（不触发 Rime 用户词库同步）
 ./cmd/update.sh --no-sync
+
+# 更新后同步用户词库到云端
+./cmd/update.sh --cloud-sync
+```
+
+## 用户词库云同步
+
+macOS 作为中转站，双向同步 iCloud ↔ OneDrive，实现跨平台用户词库共享：
+
+```
+Windows (weasel) ←→ OneDrive ←→ macOS (squirrel) ←→ iCloud ←→ iOS (hamster/hamster3)
+```
+
+**依赖：** `brew install unison`
+
+**配置（`cmd/frontends.yaml`）：**
+
+```yaml
+userdict_sync:
+  icloud: ~/Library/Mobile Documents/com~apple~CloudDocs/RimeUserSync
+  onedrive:
+    darwin: ~/Library/CloudStorage/OneDrive-Personal/Apps/RimeSync
+    windows: /c/Users/<User>/OneDrive/Apps/RimeSync
+```
+
+**使用：**
+
+```bash
+# 预览同步内容
+./cmd/sync-userdict.sh --dry-run
+
+# 执行双向同步
+./cmd/sync-userdict.sh
+
+# 详细输出
+./cmd/sync-userdict.sh --verbose
 ```
 
 ## 配置说明

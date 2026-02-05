@@ -12,6 +12,7 @@
 # skin / jsonnet
 !resources/
 !resources/**
+*.cskin
 
 # generated keyboard files (jsonnet output)
 resources/**/.*.keyboard
