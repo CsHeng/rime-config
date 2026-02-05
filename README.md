@@ -66,6 +66,19 @@ frontends:
 ./cmd/update.sh --debug
 ```
 
+### 静默部署（Silent Deployment）
+
+如需静默部署（无 UI 弹窗），可在 `cmd/frontends.yaml` 中配置 `redeploy_cmd`：
+
+```yaml
+frontends:
+  weasel:
+    # 静默部署示例（需根据实际安装路径调整 WeaselDeployer.exe 位置）
+    redeploy_cmd: 'powershell.exe -Command "Start-Process -FilePath \"D:\\Applications\\Scoop\\apps\\weasel\\current\\WeaselDeployer.exe\" -ArgumentList \"/deploy\" -WindowStyle Hidden"'
+```
+
+**注意：** 需将 `WeaselDeployer.exe` 路径替换为实际安装位置。
+
 ## 常用命令
 
 ```bash

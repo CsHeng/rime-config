@@ -63,6 +63,8 @@ frontends:
 Windows 说明（Weasel / Git Bash + Scoop）：
 - 建议用 Scoop 安装依赖：`scoop install cwrsync yq jq unzip curl`
 - `cmd/frontends.yaml` 中 Windows 的 `target_dir` 只接受 `/c/...` 风格（避免 `C:\...` 被 rsync 解析为 remote 或触发 argv 路径转换问题）
+- 脚本已自动处理 Git Bash/MSYS2 环境下的路径转换（`/d/...` → `/cygdrive/d/...`），无需手动调整
+- 静默部署：可在 `frontends.yaml` 中配置 PowerShell 命令，使用 `-WindowStyle Hidden` 参数（详见 `frontends.yaml.tmpl` 注释）
 
 ## Filter 规则
 
