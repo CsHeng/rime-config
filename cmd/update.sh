@@ -121,17 +121,26 @@ rsync_path_normalize() {
   local p="$1"
   detect_rsync_runtime
 
-  if [ "$RSYNC_RUNTIME" != "cygwin" ]; then
-    printf '%s' "$p"
-    return 0
+  # For Git Bash/MSYS with native Windows rsync, convert /d/... to /cygdrive/d/...
+  local os
+  os=$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]' || echo "")
+  if [[ "$os" =~ msys*|mingw* ]] && [ "$RSYNC_RUNTIME" != "cygwin" ]; then
+    if [[ "$p" =~ ^/([a-zA-Z])/(.*)$ ]]; then
+      local drive="${BASH_REMATCH[1]}"
+      local rest="${BASH_REMATCH[2]}"
+      printf '/cygdrive/%s/%s' "$drive" "$rest"
+      return 0
+    fi
   fi
 
-  if [[ "$p" =~ ^/([a-zA-Z])/(.*)$ ]]; then
-    local drive="${BASH_REMATCH[1]}"
-    local rest="${BASH_REMATCH[2]}"
-    drive="$(printf '%s' "$drive" | tr '[:upper:]' '[:lower:]')"
-    printf '/cygdrive/%s/%s' "$drive" "$rest"
-    return 0
+  # For cygwin rsync runtime, convert /d/... to /cygdrive/d/...
+  if [ "$RSYNC_RUNTIME" = "cygwin" ]; then
+    if [[ "$p" =~ ^/([a-zA-Z])/(.*)$ ]]; then
+      local drive="${BASH_REMATCH[1]}"
+      local rest="${BASH_REMATCH[2]}"
+      printf '/cygdrive/%s/%s' "$drive" "$rest"
+      return 0
+    fi
   fi
 
   printf '%s' "$p"
@@ -176,8 +185,21 @@ rsync_run() {
     i=$((i + 1))
   done
 
-  # cwRsync (Cygwin) also needs option-embedded paths normalized (e.g. --filter=merge <file>)
-  if [ "$RSYNC_RUNTIME" = "cygwin" ]; then
+  # Determine if we need path conversion for MSYS/Git Bash with native Windows rsync
+  local os
+  os=$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]' || echo "")
+  local needs_windows_path_conversion=0
+  case "$os" in
+    msys*|mingw*)
+      if [ "$RSYNC_RUNTIME" != "cygwin" ]; then
+        needs_windows_path_conversion=1
+      fi
+      ;;
+  esac
+
+  # Normalize option-embedded paths (e.g. --filter=merge <file>)
+  # Both Cygwin rsync and native Windows rsync in MSYS/MinGW need this
+  if [ "$RSYNC_RUNTIME" = "cygwin" ] || [[ "$os" =~ msys*|mingw* ]]; then
     for i in "${!args[@]}"; do
       if [[ "${args[$i]}" == --filter=merge\ * ]]; then
         local merge_path="${args[$i]#--filter=merge }"
@@ -202,6 +224,8 @@ rsync_run() {
     for i in "${operand_idx[@]}"; do
       local orig="${args[$i]}"
       local norm
+      # Always normalize paths (don't convert to Windows format)
+      # rsync works better when both paths are in POSIX format
       norm="$(rsync_path_normalize "$orig")"
       args[$i]="$norm"
       if [ "$DEBUG" -eq 1 ] && [ "$orig" != "$norm" ]; then
@@ -210,11 +234,12 @@ rsync_run() {
     done
   fi
 
-  if [ "$RSYNC_RUNTIME" = "cygwin" ]; then
-    MSYS2_ARG_CONV_EXCL='*' rsync "${args[@]}"
-  else
-    rsync "${args[@]}"
+  # Run rsync - prevent MSYS2 from converting paths for native Windows rsync
+  # MSYS2_ARG_CONV_EXCL='*' prevents argument conversion, preserving /cygdrive/d/... format
+  if [ "$DEBUG" -eq 1 ]; then
+    log debug "rsync args: ${args[*]}"
   fi
+  MSYS2_ARG_CONV_EXCL='*' rsync "${args[@]}"
 }
 
 ensure_dirs() {

@@ -36,6 +36,8 @@ frontends:
     ui_layer: weasel
     rsync_filter: cmd/weasel/update-rsync.filter
     bootstrap_filter: cmd/weasel/bootstrap-rsync.filter
+    # For silent deployment (no UI dialog), use PowerShell with -WindowStyle Hidden
+    # Example: 'powershell.exe -Command "Start-Process -FilePath \"D:\\\\Applications\\\\Scoop\\\\apps\\\\weasel\\\\current\\\\WeaselDeployer.exe\" -ArgumentList \"/deploy\" -WindowStyle Hidden"'
     redeploy_cmd: '"WeaselDeployer.exe" /deploy'
     sync_cmd: '"WeaselDeployer.exe" /sync'
 
