@@ -7,7 +7,8 @@ cmd/
 ├── frontends.yaml.tmpl    # 前端配置模板
 ├── frontends.yaml          # 用户本地配置（从模板复制）
 ├── frontends.sh            # YAML 读取薄封装（bash 函数）
-├── update.sh               # 日常更新 + 可选初始化
+├── update.sh               # 日常更新 + 可选初始化（macOS/Linux/Git Bash）
+├── update.ps1              # 日常更新 + 可选初始化（Windows PowerShell 7，无 rsync 依赖）
 ├── common/                 # 通用层配置
 │   └── default.custom.yaml
 └── <ui>/                   # Frontend 特定配置
@@ -59,6 +60,35 @@ frontends:
 - 统一使用 rsync，不用 cp
 - 每个 frontend 维护独立的 filter 文件
 - 默认不使用 `--delete`，需手动启用
+
+### update.ps1（Windows PowerShell 7）
+
+`update.sh` 的 PowerShell 7 移植版，**完全消除 rsync 依赖**，用原生 `Copy-Item` + 自定义 filter 引擎替代。
+
+**依赖：** PowerShell 7+ 和 yq（无需 rsync/cwrsync/curl/jq/unzip）
+
+**流程与 update.sh 完全一致：**
+```
+1. 下载 upstream → build/upstream/（Invoke-RestMethod + Expand-Archive）
+2. 对每个 active frontend:
+   - 合并 upstream + 本地层 → build/stage/<frontend>/（Copy-Item）
+   - filter 引擎 + Copy-Item → target/
+   - 触发 redeploy/sync（可选）
+```
+
+**rsync filter 兼容：** 直接解析 `cmd/<frontend>/update-rsync.filter` 和 `bootstrap-rsync.filter`，支持 first-match-wins 语义，无需额外 filter 文件。
+
+**用法：**
+```powershell
+# 首次使用
+pwsh cmd/update.ps1 -Init
+
+# 日常更新
+pwsh cmd/update.ps1
+
+# 预览 + 清理
+pwsh cmd/update.ps1 -DryRun -Delete
+```
 
 Windows 说明（Weasel / Git Bash + Scoop）：
 - 建议用 Scoop 安装依赖：`scoop install cwrsync yq jq unzip curl`

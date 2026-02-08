@@ -13,7 +13,8 @@
 
 - `cmd/frontends.yaml.tmpl`：前端配置模板
 - `cmd/frontends.sh`：YAML 读取薄封装（内部用 `yq` 读取 YAML，提供 bash 函数给脚本调用）
-- `cmd/update.sh`：日常更新脚本
+- `cmd/update.sh`：日常更新脚本（macOS/Linux/Git Bash，依赖 rsync）
+- `cmd/update.ps1`：日常更新脚本（Windows PowerShell 7，无 rsync 依赖，原生文件操作 + filter 引擎）
 - `cmd/sync-userdict.sh`：用户词库云同步脚本（Unison 双向同步 iCloud ↔ OneDrive）
 - per-frontend rsync filter：`cmd/<frontend>/update-rsync.filter` (update) / `bootstrap-rsync.filter` (init)
 
@@ -102,7 +103,7 @@ RimeUserSync/
 
 ## Git Tracking Policy
 
-- 能通过 `update.sh` 下载/生成的上游内容：不追踪
+- 能通过 `update.sh` / `update.ps1` 下载/生成的上游内容：不追踪
 - 只追踪 update 不会覆盖的本地层（patch/词库）与脚本/配置
 - `cmd/frontends.yaml`：不追踪（用户本地配置，从 `.tmpl` 复制）
 

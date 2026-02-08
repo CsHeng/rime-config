@@ -66,6 +66,39 @@ frontends:
 ./cmd/update.sh --debug
 ```
 
+### Windows (Weasel) / PowerShell 7（推荐）
+
+`update.ps1` 是 `update.sh` 的 PowerShell 7 移植版，**无需 rsync**，用原生文件操作替代。
+
+依赖：PowerShell 7+ 和 yq
+
+```powershell
+scoop install pwsh yq
+```
+
+配置（`cmd/frontends.yaml`，`target_dir` 使用 `/c/...` 或 `C:\...` 均可）：
+
+```yaml
+frontends:
+  weasel:
+    active: auto
+    target_dir: /c/Users/<User>/.config/rime
+```
+
+运行：
+
+```powershell
+# 首次使用
+pwsh cmd/update.ps1 -Init
+
+# 日常更新
+pwsh cmd/update.ps1
+
+# 预览 + 调试
+pwsh cmd/update.ps1 -DryRun
+pwsh cmd/update.ps1 -DryRun -Delete
+```
+
 ### 静默部署（Silent Deployment）
 
 如需静默部署（无 UI 弹窗），可在 `cmd/frontends.yaml` 中配置 `redeploy_cmd`：
@@ -157,7 +190,7 @@ userdict_sync:
 ## 不追踪
 
 - `cmd/frontends.yaml`：用户本地配置（从 frontends.yaml.tmpl 复制）
-- 上游文件（通过 `update.sh` 可重建）
+- 上游文件（通过 `update.sh` / `update.ps1` 可重建）
 - `*.userdb/` 用户词库数据库
 - `build/`（下载缓存、marker、stage 等）
 
