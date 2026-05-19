@@ -552,7 +552,7 @@ function Initialize-BuildDirs {
 function Update-UpstreamCache {
     Initialize-BuildDirs
 
-    $schemaRepo  = 'amzxyz/rime_wanxiang'
+    $schemaRepo  = 'amzxyz/rime-wanxiang'
 
     # --- schema ---
     $schemaAsset  = 'rime-wanxiang-base.zip'

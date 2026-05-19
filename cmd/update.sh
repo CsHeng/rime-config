@@ -429,7 +429,7 @@ update_upstream_cache() {
   require_cmd jq
   require_cmd unzip
 
-  local schema_repo="amzxyz/rime_wanxiang"
+  local schema_repo="amzxyz/rime-wanxiang"
 
   # schema
   local schema_asset="rime-wanxiang-base.zip"

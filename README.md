@@ -2,7 +2,7 @@
 
 Rime 输入法配置仓库。追踪 **update 不会覆盖**的本地配置层，支持跨设备复用。
 
-- 上游：`https://github.com/amzxyz/rime_wanxiang`
+- 上游：`https://github.com/amzxyz/rime-wanxiang`
 - 前端配置：`cmd/frontends.yaml`（frontend = Rime 的 frontend/壳子）
 
 ## 前置配置
@@ -205,7 +205,7 @@ userdict_sync:
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  1. Base Layer: build/upstream/ (下载自 GitHub)                              │
-│     - schema (rime_wanxiang-base.zip)                                        │
+│     - schema (rime-wanxiang-base.zip)                                        │
 │     - dicts (base-dicts.zip)                                                │
 │     - grammar (wanxiang-lts-zh-hans.gram)                                    │
 └─────────────────────────────────────────────────────────────────────────────┘
