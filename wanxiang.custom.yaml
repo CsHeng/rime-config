@@ -6,10 +6,23 @@ patch:
       - wanxiang_algebra:/base/全拼            # 可选输入方案名称：全拼，自然码, 自然龙, 汉心龙，小鹤双拼, 搜狗双拼, 微软双拼, 智能ABC, 紫光双拼, 国标双拼，拼音加加，乱序17
 ##########################以上格式受指令初始化控制，最好保持格式不变，如果发生变更请不要使用指令修改相关数据#####################################
   custom_phrase/user_dict: custom_phrase_user    # 使用仓库追踪的 custom_phrase_user.txt 作为置顶短语库
+
+  # 禁用声调输入，让7890用于候选选择
+  speller/alphabet: "zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA123456`;/\\"
+
+  # 清空声调映射（7890不再用于声调）
+  tone_preedit:
+    "7": ""
+    "8": ""
+    "9": ""
+    "0": ""
+
+  # 表情开关默认开启（emoji是第4个开关，索引@3）
+  "switches/@3/reset": 1
   #translator/packs/+:
     #- userxx                                  #导入根目录下名称为userxx.dict.yaml的自定义固定词典，编码要与固定词库一致，编码权重都不要少，形如姓名、专有名词公司名称等等
   #下面是候选数量
-  menu/page_size: 6  #不要超过6，7890用于代表声调1234，6个管够你用了，如果你非要10个，不要问我😜。
+  menu/page_size: 10  # 10个候选，7890用于选择候选词（不再用于声调输入）
   #下面是超级注释相关
   super_comment:                  # 超级注释模块，子项配置 true 开启，false 关闭
     candidate_length: 1           # 候选词辅助码提醒的生效长度，0为关闭  但同时清空其它，应当使用上面开关来处理

@@ -59,8 +59,13 @@ patch:
       ascii_mode: true
     com.apple.Terminal:
       ascii_mode: true
+      no_inline: true
     com.github.wez.wezterm:
       ascii_mode: true
+      no_inline: true
+    com.mitchellh.ghostty:
+      ascii_mode: true
+      no_inline: true
     # cursor
     com.todesktop.230313mzl4w4u92:
       ascii_mode: true
