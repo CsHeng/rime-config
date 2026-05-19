@@ -4,6 +4,8 @@
 !.gitignore
 !README.md
 !AGENTS.md
+!.agents/
+!.agents/**
 !cmd/
 !cmd/**
 !*.custom.yaml
@@ -27,6 +29,7 @@ cmd/frontends.yaml
 # local artifacts (target dir content should not be tracked)
 build/
 .DS_Store
+**/.DS_Store
 
 # ignore local symlinks/helpers
 cmd/**/SharedSupport
