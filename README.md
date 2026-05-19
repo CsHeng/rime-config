@@ -250,3 +250,7 @@ userdict_sync:
 ## 脚本架构
 
 详见 [cmd/README.md](cmd/README.md)
+
+## For Agents
+
+AI-specific instructions and context are in [AGENTS.md](./AGENTS.md).
