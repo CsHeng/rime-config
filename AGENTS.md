@@ -15,7 +15,7 @@ Multi-platform Rime input method configuration repository. Tracks local customiz
 
 **Definitions:**
 - **frontend**: Rime UI shell (`squirrel`=macOS / `weasel`=Windows / `hamster`/`hamster3`=iOS)
-- **自定义置顶短语**: User creates local `custom_phrase_user.txt` (referenced via `wanxiang*.custom.yaml` `custom_phrase/user_dict`, path adjusted per user Rime directory)
+- **自定义置顶短语**: User creates local `custom_phrase_user.dict.yaml` (gitignored; referenced via `custom_phrase/dictionary` in `wanxiang*.custom.yaml`, compiled at deploy time by `wanxiang_phrase.custom.yaml`)
 
 ## Repository Layout
 
@@ -40,6 +40,7 @@ build/                    # Build artifacts (not tracked)
 resources/                # Additional resources
   └── ios-csheng/         # iOS Hamster theme (.cskin format)
 *.custom.yaml             # Root-level schema customizations
+custom_phrase_user.dict.yaml.example  # Tracked template for the gitignored user phrase library
 ```
 
 **Required Files:**
@@ -180,10 +181,33 @@ RimeUserSync/
 - English mode: `wanxiang_english.schema.yaml`
 - T9 mode: `wanxiang_t9.schema.yaml`
 
+### 自定义置顶短语 (Custom Phrase Library)
+
+万象的置顶短语由 `wanxiang.custom_phrase` Lua filter（`lua/wanxiang/custom_phrase.lua`）驱动：
+它在 init 时构造 `custom_phrase` 这个 `script_translator`，再把命中的整编码候选提到候选流最前。
+
+- 词库入口：`wanxiang*.custom.yaml` 中的 `custom_phrase/dictionary: custom_phrase_user`（runtime）。
+- 编译入口：`wanxiang_phrase.custom.yaml`（及 `wanxiang_phrase_t9.custom.yaml`）的 `translator/dictionary`；
+  `wanxiang.schema.yaml` 的 `schema/dependencies` 包含 `wanxiang_phrase`，部署时 `SchemaUpdate` 才编译该词库。
+- 用户词库：`custom_phrase_user.dict.yaml`（gitignored，缺失时 `update.sh`/`update.ps1` 从 `.example` 生成），
+  行格式 `<短语><TAB><编码><TAB><权重>`，编码可为任意字母串。
+- 不要使用 `custom_phrase/user_dict`：万象的 `custom_phrase` 组件带 `enable_user_dict: false`，
+  librime 的 `UserDictionaryComponent::Create` 会直接返回 NULL，该键被完全忽略（历史 bug 根因）。
+- 修改短语后必须触发部署（`Squirrel --reload` / `WeaselDeployer /deploy` / `cmd/update.sh`），
+  编译产物为 `build/custom_phrase_user.table.bin` + `build/custom_phrase_user.reverse.bin`。
+
 ### iOS Theme System
 - Format: Hamster .cskin (YAML-based)
 - Structure: `config.yaml` + layout files (portrait/landscape, light/dark)
 - Tooling: `hamster3-ios-csheng-skin` skill for maintenance
+
+### iOS (Hamster3/元书) 文件流向
+重新部署/同步时的流转：`iCloud → 应用`（覆盖合并）→ RIME（部署或同步）→ `应用 → 键盘`（整体回写）。
+- `键盘 → 应用` 仅复制匹配 `include_keyboard_rime_files.txt` 的文件，且先删除应用侧 `*.userdb` 目录；
+  该文件必须包含 `.*[.]userdb.*$`（仓库：`cmd/hamster3/include_keyboard_rime_files.txt`），
+  否则每次部署都会清空手机自造词；禁止写 `^.*[.]custom.*$`（会让键盘旧 patch 覆盖 iCloud 新 patch）。
+- 自造词合并只发生在「同步」（合并 `RimeUserSync/*/<dict>.userdb.txt`）；部署不合并。
+- 手机的 patch/方案来自 iCloud 方案目录，因此仓库改完必须让手机执行一次「重新部署」。
 
 ## Tool Requirements
 
@@ -206,6 +230,18 @@ RimeUserSync/
 ### Deployment Verification
 - Staged configs: check `build/stage/{platform}/` after `cmd/update.sh`
 - Target sync: verify files copied to target directories
+- Custom phrases: after a deploy, `~/Library/Rime/build/custom_phrase_user.table.bin` must be newer than
+  `custom_phrase_user.dict.yaml`; functional check = typing `gsdz` returns the phrase as candidate 0
+
+### 无 IME 验证置顶短语（可选）
+在临时目录用 Squirrel 自带的 librime 直接查候选，不动真实 `~/Library/Rime`：
+
+1. `otool -L "/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel" | grep librime` 取版本（current version 字段）
+2. 同 tag 取 `src/rime_api.h`（https://github.com/rime/librime），写个 ~40 行 C 程序：
+   `rime->setup({shared_data_dir,user_data_dir,staging_dir=<临时目录>}) -> initialize -> create_session ->
+   select_schema("wanxiang") -> simulate_key_sequence("gsdz") -> get_context` 打印 `menu.candidates`
+3. `clang -o probe probe.c -I<rime_api.h 目录> "/Library/Input Methods/Squirrel.app/Contents/Frameworks/librime.1.dylib" -Wl,-rpath,"/Library/Input Methods/Squirrel.app/Contents/Frameworks"`
+4. 把 `~/Library/Rime`（排除 `*.userdb`、`*.gram`、`custom/`）rsync 到临时目录，在临时目录里运行（不要调 `start_maintenance`，直接用现成 build/ 产物）
 - Platform redeploy: confirm input method reloaded
 
 ### Testing

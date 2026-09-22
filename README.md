@@ -163,11 +163,60 @@ userdict_sync:
 
 ## 配置说明
 
-### 自定义词组路径
-`custom_phrase_user.txt` 的路径在 `wanxiang*.custom.yaml` 中通过 `custom_phrase/user_dict` 指定。**用户需根据本地 Rime 用户目录调整路径**，例如：
-- macOS (Squirrel): `~/Library/Rime/custom_phrase_user.txt`
-- Windows (Weasel / Git Bash): `/c/Users/<User>/AppData/Roaming/Rime/custom_phrase_user.txt`（对应 `%APPDATA%\Rime\custom_phrase_user.txt`）
-- iOS (Hamster): 通过 app 内部文件管理访问
+### 自定义置顶短语
+
+短语库通过“词库（dictionary）+ 编译入口”接入，而不是 `custom_phrase/user_dict`
+（万象的 `custom_phrase` 组件为 `enable_user_dict: false`，该键会被 librime 完全忽略）。
+
+```
+custom_phrase_user.dict.yaml (仓库根，gitignored)
+        │  deploy: update.sh / update.ps1 复制到各前端 target
+        ▼
+<target>/custom_phrase_user.dict.yaml
+        │  重新部署（Squirrel --reload / WeaselDeployer /deploy）
+        │  wanxiang_phrase.custom.yaml -> translator/dictionary: custom_phrase_user
+        ▼
+<target>/build/custom_phrase_user.table.bin + .reverse.bin + wanxiang_phrase.prism.bin
+        │  runtime: wanxiang.custom.yaml -> custom_phrase/dictionary: custom_phrase_user
+        ▼
+wanxiang.custom_phrase Lua filter 把整编码候选提到首位（置顶）
+```
+
+文件行格式为 `<短语><TAB><编码><TAB><权重>`，编码可以是任意字母串（如 `gsdz`、`email`），
+同一编码多行时权重大的排前面。文件位于各前端 Rime 用户目录：
+- macOS (Squirrel): `~/Library/Rime/custom_phrase_user.dict.yaml`
+- Windows (Weasel / Git Bash): `/c/Users/<User>/AppData/Roaming/Rime/custom_phrase_user.dict.yaml`
+- iOS (Hamster3): `Documents/RimeUserData/<方案目录>/custom_phrase_user.dict.yaml`
+
+文件缺失时 `update.sh` / `update.ps1` 会用 `custom_phrase_user.dict.yaml.example` 自动生成一份空模板。
+该文件是短语库的**唯一来源**：上游 `custom_phrase.dict.yaml` 的内置示例不再参与（需要时把对应行抄进本文件即可）。
+**编辑后必须重新部署**才会生效（部署时才会编译成 `build/custom_phrase_user.table.bin`）。
+
+### iOS (Hamster3/元书) 三个目录与自造词（重要）
+
+元书把 Rime 文件放在三处，并不实时同步，只在「重新部署」/「同步」时按规则流转：
+
+| 位置 | 路径 | 说明 |
+| --- | --- | --- |
+| iCloud | `iCloud~com~ihsiao~apps~Hamster3/Documents/RimeUserData/rime-wanxiang` | 本仓库 hamster3 的 target（方案/patch 来源） |
+| 应用 | app 沙盒内同构目录 | Rime 实际运行的 `user_data_dir`；`include_keyboard_rime_files.txt` 等规则文件也在此 |
+| 键盘 | App Group 容器 | 真正保存自造词/词频（`*.userdb`）的地方 |
+
+流转规则（重新部署/同步时）：`iCloud → 应用`（**覆盖式合并**，排除规则见 `应用/RimeSharedSupport/exclude_iCloud_rime_files.txt`）
+→ 运行 RIME（部署或同步）→ `应用 → 键盘`（**整体回写，先删后拷**）。其中 `键盘 → 应用` 只复制匹配
+`include_keyboard_rime_files.txt` 的文件，并且会先删除应用侧方案根目录下的 `*.userdb` 目录。
+
+由此得到两条必须遵守的约束：
+
+- `include_keyboard_rime_files.txt` **必须包含 `.*[.]userdb.*$`**（仓库在 `cmd/hamster3/include_keyboard_rime_files.txt` 维护）。
+  缺了它：应用侧 userdb 被删除后不会从键盘拷回，回写时又把键盘覆盖掉 → **每次部署都会清空手机的自造词/词频**。
+- **不要**写 `^.*[.]custom.*$` 这类规则：那会让键盘上的旧 `.custom.yaml` 覆盖 iCloud 上的新 patch，
+  手机就永远拿不到仓库更新（表现为“自定义词/新配置不生效”）。
+- 「RIME → 禁止复制键盘文件」需保持**关闭**，否则键盘侧一起被清空。
+
+自造词跨设备合并：在手机上点「同步」，Mac 执行 `Squirrel --sync`（即 `cmd/update.sh` 默认的 `sync_cmd`），
+Windows 执行 `WeaselDeployer /sync`；各设备的快照位于 `RimeUserSync/<installation_id>/<dict>.userdb.txt`，
+由 `cmd/sync-userdict.sh`（Unison）负责 iCloud ↔ OneDrive 段。手机自造词丢失后，用已有快照再跑一次「同步」即可找回。
 
 ### 前端同步选项
 - `--sync`：触发 Rime 用户词库同步（默认开启）
@@ -175,8 +224,8 @@ userdict_sync:
 
 ## 仓库追踪内容（git）
 
-- `*.custom.yaml`：schema patch（通用层）
-- `custom_phrase.txt`：自定义词组示例（引导用户复制定制）
+- `*.custom.yaml`：schema patch（通用层，含 `custom_phrase/dictionary` 与 `wanxiang_phrase*.custom.yaml` 编译入口）
+- `custom_phrase_user.dict.yaml.example`：自定义短语模板（引导用户复制定制）
 - `cmd/common/default.custom.yaml`：通用 UI patch
 - `cmd/<ui>/*.custom.yaml`：UI 特定 patch
 - `cmd/<ui>/{installation.yaml,user.yaml}`：初始化模板
@@ -185,7 +234,7 @@ userdict_sync:
 
 ## 本地文件
 
-- `custom_phrase_user.txt`：用户自定义词组（基于 custom_phrase.txt 复制定制）
+- `custom_phrase_user.dict.yaml`：用户自定义置顶短语（gitignored；行格式 `<短语><TAB><编码><TAB><权重>`）
 
 ## 不追踪
 
@@ -214,7 +263,7 @@ userdict_sync:
                                     ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │  2. Local Layer: 仓库追踪文件（覆盖 Base）                                   │
-│     - custom_phrase_user.txt                                                │
+│     - custom_phrase_user.dict.yaml (gitignored，缺失时用 .example 生成)      │
 │     - *.custom.yaml (schema patches)                                         │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
