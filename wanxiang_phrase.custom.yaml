@@ -1,0 +1,6 @@
+# wanxiang_phrase.schema.yaml 是“自定义短语词库”的编译入口：
+#   wanxiang.schema.yaml 的 schema/dependencies 会带上 wanxiang_phrase，
+#   而 SchemaUpdate 只编译 translator/dictionary 指向的那个词库。
+# 这里把它指向用户短语库，prism 仍是上游的 wanxiang_phrase（由该词库的 syllabary 生成）。
+patch:
+  translator/dictionary: custom_phrase_user

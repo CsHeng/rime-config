@@ -1,2 +1,3 @@
 patch:
-  custom_phrase/user_dict: custom_phrase_user
+  # 置顶短语库与 wanxiang.custom.yaml 保持一致（t9 方案的 custom_phrase/prism 仍是上游的 wanxiang_phrase_t9）
+  custom_phrase/dictionary: custom_phrase_user

@@ -632,9 +632,17 @@ function Build-StageDirectory {
     }
 
     # local layer (repo tracked)
-    $customPhrase = Join-Path $RepoDir 'custom_phrase_user.txt'
-    if (Test-Path $customPhrase) {
-        Copy-SingleFile -Source $customPhrase -Destination $stage
+    # 自定义置顶短语词库（gitignored）；缺失时用模板生成，保证 custom_phrase_user 始终可编译
+    $phraseDict = Join-Path $RepoDir 'custom_phrase_user.dict.yaml'
+    if (-not (Test-Path $phraseDict)) {
+        $phraseTemplate = Join-Path $RepoDir 'custom_phrase_user.dict.yaml.example'
+        if (Test-Path $phraseTemplate) {
+            Copy-Item -Path $phraseTemplate -Destination $phraseDict -Force
+            Write-Log -Level warn "Created custom_phrase_user.dict.yaml from template (edit it to add your phrases)"
+        }
+    }
+    if (Test-Path $phraseDict) {
+        Copy-SingleFile -Source $phraseDict -Destination $stage
     }
     Get-ChildItem -Path $RepoDir -Filter '*.custom.yaml' -File | ForEach-Object {
         Copy-SingleFile -Source $_.FullName -Destination $stage

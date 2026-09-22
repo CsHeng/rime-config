@@ -524,8 +524,14 @@ build_stage_dir() {
   fi
 
   # local layer (repo tracked)
-  if [ -f "$REPO_DIR/custom_phrase_user.txt" ]; then
-    rsync_run -a "$REPO_DIR/custom_phrase_user.txt" "$stage/"
+  # 自定义置顶短语词库（gitignored）；缺失时用模板生成，保证 custom_phrase_user 始终可编译
+  local phrase_dict="$REPO_DIR/custom_phrase_user.dict.yaml"
+  if [ ! -f "$phrase_dict" ] && [ -f "$REPO_DIR/custom_phrase_user.dict.yaml.example" ]; then
+    cp "$REPO_DIR/custom_phrase_user.dict.yaml.example" "$phrase_dict"
+    log warn "Created custom_phrase_user.dict.yaml from template (edit it to add your phrases)"
+  fi
+  if [ -f "$phrase_dict" ]; then
+    rsync_run -a "$phrase_dict" "$stage/"
   fi
 
   shopt -s nullglob

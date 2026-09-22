@@ -1,0 +1,3 @@
+# 同 wanxiang_phrase.custom.yaml：t9 方案的短语词库编译入口，prism 仍为上游 wanxiang_phrase_t9。
+patch:
+  translator/dictionary: custom_phrase_user
