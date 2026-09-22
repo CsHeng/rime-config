@@ -550,7 +550,8 @@ build_stage_dir() {
     local tpl_dir="$REPO_DIR/cmd/$ui_layer"
     if [ -d "$tpl_dir" ]; then
       shopt -s nullglob
-      local files=("$tpl_dir"/*.custom.yaml)
+      # UI 层只取 patch 与 Hamster3 的 include_keyboard_rime_files.txt（键盘→应用 包含规则）
+      local files=("$tpl_dir"/*.custom.yaml "$tpl_dir"/*.txt)
       shopt -u nullglob
       if [ "${#files[@]}" -gt 0 ]; then
         rsync_run -a "${files[@]}" "$stage/"

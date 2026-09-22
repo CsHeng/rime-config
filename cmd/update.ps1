@@ -656,7 +656,10 @@ function Build-StageDirectory {
         }
         $tplDir = Join-Path $RepoDir "cmd/$UiLayer"
         if (Test-Path $tplDir) {
-            Get-ChildItem -Path $tplDir -Filter '*.custom.yaml' -File | ForEach-Object {
+            # UI 层只取 patch 与 Hamster3 的 include_keyboard_rime_files.txt（键盘→应用 包含规则）
+            Get-ChildItem -Path $tplDir -File | Where-Object {
+                $_.Name -like '*.custom.yaml' -or $_.Name -like '*.txt'
+            } | ForEach-Object {
                 Copy-Item -Path $_.FullName -Destination (Join-Path $stage $_.Name) -Force
             }
         }
