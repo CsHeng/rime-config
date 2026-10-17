@@ -3,6 +3,7 @@
 Rime 输入法配置仓库。追踪 **update 不会覆盖**的本地配置层，支持跨设备复用。
 
 - 上游：`https://github.com/amzxyz/rime-wanxiang`
+- 数据/语法模型：`https://github.com/amzxyz/rime-wanxiang-data`（原 `amzxyz/RIME-LMDG`，仓库改名）
 - 前端配置：`cmd/frontends.yaml`（frontend = Rime 的 frontend/壳子）
 
 ## 前置配置

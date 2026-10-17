@@ -594,8 +594,8 @@ function Update-UpstreamCache {
         Write-Log -Level info "Dicts up to date: $($dictsInfo.Version)"
     }
 
-    # --- grammar ---
-    $grammarRepo   = 'amzxyz/RIME-LMDG'
+    # --- grammar (data repo renamed from amzxyz/RIME-LMDG) ---
+    $grammarRepo   = 'amzxyz/rime-wanxiang-data'
     $grammarAsset  = 'wanxiang-lts-zh-hans.gram'
     $grammarMarker = Join-Path $MarkersDir 'grammar_version'
     $grammarFile   = Join-Path $CacheDir $grammarAsset

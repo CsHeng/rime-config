@@ -303,12 +303,12 @@ github_releases_json() {
   local api_url="https://api.github.com/repos/${repo}/releases"
 
   if [ -n "${GITHUB_TOKEN:-}" ]; then
-    if ! curl -sS -H "Authorization: token ${GITHUB_TOKEN}" "$api_url" -o "$out_file"; then
+    if ! curl -L -sS -H "Authorization: token ${GITHUB_TOKEN}" "$api_url" -o "$out_file"; then
     log error "Failed to fetch GitHub releases: $repo"
     return 1
   fi
   else
-    if ! curl -sS "$api_url" -o "$out_file"; then
+    if ! curl -L -sS "$api_url" -o "$out_file"; then
       log error "Failed to fetch GitHub releases: $repo"
       return 1
     fi
@@ -483,8 +483,8 @@ update_upstream_cache() {
     log info "Dicts up to date: $dicts_version"
   fi
 
-  # grammar
-  local grammar_repo="amzxyz/RIME-LMDG"
+  # grammar (data repo renamed from amzxyz/RIME-LMDG)
+  local grammar_repo="amzxyz/rime-wanxiang-data"
   local grammar_asset="wanxiang-lts-zh-hans.gram"
   local grammar_marker="$MARKERS_DIR/grammar_version"
   local grammar_file="$CACHE_DIR/$grammar_asset"
