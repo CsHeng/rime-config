@@ -26,12 +26,13 @@ cmd/                       # Platform-specific configurations and scripts
   ├── weasel/             # Windows Weasel configs + rsync filters
   ├── hamster/            # iOS Hamster configs (legacy)
   ├── hamster3/           # iOS Hamster 3 configs + rsync filters
-  ├── frontends.yaml.tmpl # Frontend platform definitions template
-  ├── frontends.yaml      # User-local frontend config (not tracked)
-  ├── frontends.sh        # Frontend resolution helpers (yq wrapper)
-  ├── sync-userdict.sh    # User dictionary cloud sync (Unison)
+  ├── frontends.json.tmpl # Frontend platform definitions template (JSON)
+  ├── frontends.json      # User-local frontend config (not tracked)
+  ├── frontends.sh        # Frontend resolution helpers (jq-based bash functions)
+  ├── sync-userdict.sh    # User dictionary cloud bridge (macOS, Unison)
   ├── update.sh           # Update script (bash, rsync-based)
-  └── update.ps1          # Update script (PowerShell 7, native file ops)
+  ├── update.ps1          # Update script (PowerShell 7, native file ops; Windows entry)
+  └── tests/              # Scenario tests (run-tests.sh / run-tests.ps1, see tests/README.md)
 build/                    # Build artifacts (not tracked)
   ├── cache/              # Download cache
   ├── markers/            # Version markers
@@ -44,11 +45,11 @@ custom_phrase_user.dict.yaml.example  # Tracked template for the gitignored user
 ```
 
 **Required Files:**
-- `cmd/frontends.yaml.tmpl`: Frontend config template
-- `cmd/frontends.sh`: YAML parsing wrapper (yq-based, provides bash functions)
+- `cmd/frontends.json.tmpl`: Frontend config template (single source of truth shared by both entries)
+- `cmd/frontends.sh`: JSON parsing wrapper (jq-based, provides bash functions)
 - `cmd/update.sh`: Daily update script (macOS/Linux/Git Bash, rsync-based)
-- `cmd/update.ps1`: Daily update script (Windows PowerShell 7, native file ops)
-- `cmd/sync-userdict.sh`: User dictionary cloud sync (Unison: iCloud ↔ OneDrive)
+- `cmd/update.ps1`: Daily update script (Windows PowerShell 7, native file ops, no yq/rsync/jq/curl/unzip)
+- `cmd/sync-userdict.sh`: User dictionary cloud bridge (macOS-only, Unison: iCloud ↔ OneDrive)
 - Per-frontend rsync filters: `cmd/<frontend>/update-rsync.filter` (update) / `bootstrap-rsync.filter` (init)
 
 ## Coding Standards
@@ -58,7 +59,7 @@ custom_phrase_user.dict.yaml.example  # Tracked template for the gitignored user
 - Error handling: `set -euo pipefail`
 - Path resolution: absolute paths via `$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)`
 - Color output: exported color codes (GREEN, YELLOW, RED, NC)
-- Dependency checks: validate required tools (yq, rsync, unison) before use
+- Dependency checks: validate required tools per operation (jq for config, rsync only when staging, curl/jq/unzip only when downloading, unison only for the cloud bridge)
 - Windows compatibility: Git Bash style paths (`/c/...`), never `C:\...` or `C:...`
 
 ### PowerShell Scripts
@@ -67,11 +68,11 @@ custom_phrase_user.dict.yaml.example  # Tracked template for the gitignored user
 - Native file operations: no rsync dependency
 - Filter engine: custom implementation for rsync filter compatibility
 
-### YAML Configuration
-- Rime schema files: `.schema.yaml`, `.dict.yaml`, `.custom.yaml`
-- Frontend config: `cmd/frontends.yaml` (platform definitions, target paths, deployment commands)
+### Configuration Formats
+- Rime schema files: `.schema.yaml`, `.dict.yaml`, `.custom.yaml` — validate with `yq` (mikefarah/yq v4)
+- Frontend config: `cmd/frontends.json` (platform definitions, target paths, `redeploy_cmd`/`sync_cmd` as `{executable, args}` objects) — validate with `jq`
 - iOS theme: `resources/ios-csheng/config.yaml` (.cskin format)
-- Validation: use `yq` (mikefarah/yq v4) for parsing
+- The two update entries share one JSON config: PowerShell reads it natively (`ConvertFrom-Json`, single read + validation), bash via `frontends.sh` (jq). No YAML fallback at runtime.
 
 ### File Naming
 - Schema files: `wanxiang*.schema.yaml`, `wanxiang*.dict.yaml`
@@ -84,11 +85,14 @@ custom_phrase_user.dict.yaml.example  # Tracked template for the gitignored user
 
 User must create local config file:
 ```bash
-cp cmd/frontends.yaml.tmpl cmd/frontends.yaml
-# Edit cmd/frontends.yaml: set target_dir and active flags
+cp cmd/frontends.json.tmpl cmd/frontends.json
+# Edit cmd/frontends.json: set target_dir and active flags
 ```
 
-`cmd/frontends.yaml` is not tracked, user can modify per local needs.
+`cmd/frontends.json` is not tracked, user can modify per local needs. Both entries accept
+`--config <file>` / `-Config <file>` (relative to caller cwd); `.env` (e.g. `GITHUB_TOKEN`) is loaded
+only from the selected config directory. Migration from the old `frontends.yaml` is a documented manual
+one-time step (see cmd/README.md); runtime has no YAML fallback.
 
 ### Init Flow (Optional)
 
@@ -109,45 +113,56 @@ cp cmd/frontends.yaml.tmpl cmd/frontends.yaml
    - `build/stage/<frontend>/` = upstream + local common layer + (optional) UI layer
    - Directory can be deleted and regenerated anytime
 
-3. **Frontend activation** (configured in `cmd/frontends.yaml`):
-   - `active: auto` (default): auto-run when platform detected
-   - `active: true`: force run, supports multiple frontends simultaneously
-   - `active: false`: disabled
+3. **Frontend activation** (configured in `cmd/frontends.json`):
+   - `"active": "auto"` (default): auto-run when platform detected
+   - `"active": true`: force run, supports multiple frontends simultaneously
+   - `"active": false`: disabled
 
    Example: deploy to both squirrel and hamster3 on macOS:
-   ```yaml
-   frontends:
-     squirrel:
-       active: auto  # darwin auto-detect
-     hamster3:
-       active: true  # force enable
+   ```json
+   {"frontends": {
+     "squirrel": {"active": "auto"},
+     "hamster3": {"active": true}
+   }}
    ```
 
 4. **Frontend resources + downloaded resources** must pass through per-frontend filter via single `rsync`:
    - `rsync build/stage/<frontend>/ -> <target>/` + `--filter="merge cmd/<frontend>/update-rsync.filter"`
    - Default: no `--delete` (manual cleanup with `--dry-run --delete` preview recommended)
+   - Target validations run before any target write: `--target`/`-Target` override only with a single active frontend; non-dry-run override must disable redeploy+sync; stage/template/upstream overlap with target rejected; duplicate targets across frontends rejected. The PowerShell filter engine is directory-aware (excluded dirs prune whole subtrees for copy AND delete), errors on unsupported rule forms, and preserves `user.yaml`/`installation.yaml`/nested `*.userdb/`/`build/`/`lua/tips/`/frontend excludes under copy, explicit `-Delete`, and dry-run.
+   - dry-run touches only rebuildable cache/stage: no target creation/modification, no user phrase file generation (example goes into stage only), no hooks/bridge.
 
 5. **Post-update Hooks**:
-   - Auto-execute `redeploy_cmd` per `cmd/frontends.yaml` (default on, disable with `--no-redeploy`)
-   - Auto-execute Rime userdict sync (`sync_cmd`, default on, disable with `--no-sync`)
-   - Optional: `--cloud-sync` triggers cloud userdict sync (iCloud ↔ OneDrive)
+   - Auto-execute `redeploy_cmd` per `cmd/frontends.json` (default on, disable with `--no-redeploy`/`-NoRedeploy`) as `{executable, args}` objects invoked natively (no `sh -c`/`Invoke-Expression`), exit codes checked and reported as frontend|stage|exit summaries with nonzero overall exit on failure
+   - Auto-execute Rime userdict sync (`sync_cmd`, default on, disable with `--no-sync`/`-NoSync`)
+   - `--sync-only`/`-SyncOnly`: bypasses download/stage/copy/redeploy and only calls desktop frontends' Rime sync; iOS-only frontends (no `sync_cmd`) cannot report sync-only complete; conflicts (`--init`/`--delete`/`--target`/`--no-download`/`--no-sync`, and `--cloud-sync` × `--no-sync`) are rejected before side effects
+   - `--cloud-sync` (macOS only): order is pre-bridge → update/Rime sync → post-bridge; one bridge pair per invocation regardless of frontend count. Squirrel `--sync` is an async notification with no completion signal (upstream discards the result), so the chain honestly stops at "submitted" with exit code 75 and a manual `./cmd/sync-userdict.sh` post-bridge step. WeaselDeployer `/sync` blocks until the maintenance thread finishes, so `-SyncOnly` exit codes are completion results on Windows.
+   - Exit codes: `0` success, `1` failure, `75` cloud chain pending manual post-bridge
 
 ### Userdict Cloud Sync Flow (Optional)
 
-`cmd/sync-userdict.sh` uses Unison for iCloud ↔ OneDrive bidirectional sync:
+`cmd/sync-userdict.sh` (macOS only) uses Unison for the iCloud ↔ OneDrive bridge;
+Windows has no cloud bridge: Weasel reads/writes its local OneDrive folder directly via the Rime `sync_dir` in its own installation.yaml, and `update.ps1 -CloudSync` is explicitly rejected.
 
 ```
-Windows (weasel) ↔ OneDrive ↔ macOS (squirrel) ↔ iCloud ↔ iOS (hamster/hamster3)
+Windows Rime → local OneDrive dir (installation.yaml sync_dir)
+                        ⇕ same OneDrive account + same logical folder (eventual consistency)
+macOS Rime → local OneDrive dir (sync_dir)
+                        ⇕ Unison (cmd/sync-userdict.sh, macOS-only bridge)
+                local iCloud dir
+                        ⇕ iCloud client / iOS Rime sync
+                   iOS Rime
 ```
 
-**Configuration (`cmd/frontends.yaml`):**
-```yaml
-userdict_sync:
-  icloud: ~/Library/Mobile Documents/com~apple~CloudDocs/RimeUserSync
-  onedrive:
-    darwin: ~/Library/CloudStorage/OneDrive-Personal/Apps/RimeSync
-    windows: /c/Users/<User>/OneDrive/Apps/RimeSync
+**Configuration (`cmd/frontends.json`):**
+```json
+{"userdict_sync": {
+  "icloud": "~/Library/Mobile Documents/com~apple~CloudDocs/RimeUserSync",
+  "onedrive": {"darwin": "~/Library/CloudStorage/OneDrive-Personal/Apps/RimeSync"}
+}}
 ```
+
+Rime's own `installation.yaml/sync_dir` and this tool config are two different settings that must point at the same logical folders; desktop sync_dir uses absolute paths (Rime does not expand `~`). Full entry: `./cmd/update.sh --sync-only --cloud-sync` (pre-bridge → submit sync → exit 75 + manual post-bridge `./cmd/sync-userdict.sh`). `--dry-run` prints dirs/policy/steps only and never starts Unison (not an accurate cloud diff preview); it is not a pseudo-interactive unison session. Unison policy stays `-times -perms 0 -prefer newer`, ignoring `.DS_Store`/`*.tmp`; user archives are never migrated or cleaned by the tool.
 
 **sync_dir structure** (distinguished by `installation_id`):
 ```
@@ -160,11 +175,13 @@ RimeUserSync/
 
 **Dependency:** `unison` (macOS: `brew install unison`)
 
+Migrating an existing Mac from an iCloud sync_dir to OneDrive is a documented manual sequence in README.md (backup installation.yaml + snapshots, export via `Squirrel --sync`, converge both trees with one bridge run, then edit only `sync_dir` keeping the original `installation_id`; never re-init or bulk-rewrite/delete either cloud dir).
+
 ### Git Workflow
 
 - Upstream content downloadable/generatable via `update.sh`/`update.ps1`: not tracked
 - Only track local layer not overwritten by update (patches/dictionaries) and scripts/configs
-- `cmd/frontends.yaml`: not tracked (user-local config, copied from `.tmpl`)
+- `cmd/frontends.json`: not tracked (user-local config, copied from `.tmpl`)
 
 ## Architecture Notes
 
@@ -172,7 +189,7 @@ RimeUserSync/
 - Single source of truth: root `*.custom.yaml` files
 - Platform-specific overrides: `cmd/{platform}/*.custom.yaml`
 - Build system: `cmd/update.sh` merges and stages configs per platform
-- Deployment: rsync with platform-specific filters (`rsync_filter` in frontends.yaml)
+- Deployment: rsync with platform-specific filters (`rsync_filter` in frontends.json; paths relative to `cmd/`)
 
 ### Schema Variants
 - Base: `wanxiang.schema.yaml`
@@ -189,7 +206,7 @@ RimeUserSync/
 - 词库入口：`wanxiang*.custom.yaml` 中的 `custom_phrase/dictionary: custom_phrase_user`（runtime）。
 - 编译入口：`wanxiang_phrase.custom.yaml`（及 `wanxiang_phrase_t9.custom.yaml`）的 `translator/dictionary`；
   `wanxiang.schema.yaml` 的 `schema/dependencies` 包含 `wanxiang_phrase`，部署时 `SchemaUpdate` 才编译该词库。
-- 用户词库：`custom_phrase_user.dict.yaml`（gitignored，缺失时 `update.sh`/`update.ps1` 从 `.example` 生成），
+- 用户词库：`custom_phrase_user.dict.yaml`（gitignored，缺失时真实运行的 `update.sh`/`update.ps1` 从 `.example` 生成；dry-run 只把示例放进 stage），
   行格式 `<短语><TAB><编码><TAB><权重>`，编码可为任意字母串。
 - 不要使用 `custom_phrase/user_dict`：万象的 `custom_phrase` 组件带 `enable_user_dict: false`，
   librime 的 `UserDictionaryComponent::Create` 会直接返回 NULL，该键被完全忽略（历史 bug 根因）。
@@ -211,20 +228,26 @@ RimeUserSync/
 
 ## Tool Requirements
 
-- `yq` (mikefarah/yq v4): YAML parsing and manipulation
-- `rsync`: configuration synchronization (bash scripts)
-- `unison`: cloud userdict sync (optional)
-- `bash`: script execution (Git Bash on Windows)
+- `jq`: frontends.json parsing (bash entries; PowerShell uses native JSON, no jq)
+- `rsync`: configuration synchronization (bash update flow; not needed for `--sync-only`)
+- `curl` + `unzip` (bash) / native `Invoke-RestMethod` + `Expand-Archive` (pwsh): upstream download, checked only when downloading
+- `unison`: macOS cloud bridge only (optional)
+- `bash`: macOS/Linux; Git Bash optional on Windows
 - Platform-specific:
   - macOS: Squirrel installed
-  - Windows: Weasel installed, Git Bash or MSYS2
+  - Windows: Weasel + PowerShell 7 (yq/Git Bash/rsync/jq/curl/unzip NOT required)
   - iOS: Hamster app installed
 
 ## Validation
 
 ### Pre-Commit Checks
-- YAML syntax: `yq eval '.' <file>` (exit 0 = valid)
-- Path format (Windows): verify `/c/...` style in `cmd/frontends.yaml`
+- Rime YAML syntax: `yq eval '.' <file>` (exit 0 = valid)
+- frontends.json: `jq empty <file>` (exit 0 = valid)
+- update.ps1 syntax: pwsh `[System.Management.Automation.Language.Parser]::ParseFile(...)` (no errors)
+- Bash syntax: `bash -n cmd/*.sh`; lint: `shellcheck -S warning cmd/*.sh`
+- Scenario tests: `bash cmd/tests/run-tests.sh` and `pwsh -NoProfile -File cmd/tests/run-tests.ps1`
+  (macOS pwsh results do NOT count as Windows-native evidence; see cmd/tests/README.md)
+- Path format (Windows bash entry): verify `/c/...` style in `cmd/frontends.json`
 - Rsync filter files: verify referenced files exist
 
 ### Deployment Verification

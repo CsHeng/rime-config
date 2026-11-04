@@ -6,55 +6,43 @@ set -euo pipefail
 #
 # 同步拓扑:
 #   Windows (weasel) ←→ OneDrive ←→ macOS (squirrel) ←→ iCloud ←→ iOS (hamster/hamster3)
+#
+# 说明:
+#   - Rime 的词条合并由各设备自己的 Rime 同步完成；本脚本只搬运快照文件。
+#   - --dry-run 不启动 Unison，仅输出目录、策略与待执行步骤；
+#     它不是云端文件差异的精确预览。
 
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-REPO_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
-
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/frontends.sh"
 
 DRY_RUN=0
 DEBUG=0
 VERBOSE=0
 FORCE=0
+CONFIG_ARG=""
 
 usage() {
   cat <<USAGE
-Usage: $0 [--dry-run] [--verbose] [--debug] [--force]
+Usage: $0 [--config <file>] [--dry-run] [--verbose] [--debug] [--force]
 
 Sync user dictionaries between iCloud and OneDrive (macOS only).
 Uses Unison for true bidirectional sync with conflict detection.
 
 Options:
-  --dry-run   Preview sync without making changes
-  --verbose   Show detailed output
-  --debug     Enable debug logging
-  --force     Skip confirmation for large deletions
+  --config <file>  使用指定的 frontends.json（默认与本脚本同目录的 frontends.json）
+  --dry-run        只输出目录、策略与待执行步骤，不启动 Unison，不做任何修改
+  --verbose        显示 Unison 详细输出
+  --debug          启用调试日志
+  --force          跳过大量删除确认 (unison -confirmbigdel=false)
 
-Requires: unison (brew install unison)
+Requires: jq, unison (brew install unison)
 USAGE
 }
 
-_expand_path() {
-  local p="$1"
-  echo "${p/#\~/$HOME}"
-}
-
-_get_icloud_path() {
-  local raw
-  raw=$(_yq -r '.userdict_sync.icloud // ""')
-  [ -n "$raw" ] && _expand_path "$raw" || echo ""
-}
-
-_get_onedrive_path() {
-  local os
-  os=$(uname -s 2>/dev/null | tr '[:upper:]' '[:lower:]' || echo "")
-  local raw=""
-  case "$os" in
-    darwin*) raw=$(_yq -r '.userdict_sync.onedrive.darwin // ""') ;;
-    msys*|mingw*|cygwin*) raw=$(_yq -r '.userdict_sync.onedrive.windows // ""') ;;
-  esac
-  [ -n "$raw" ] && _expand_path "$raw" || echo ""
+_require_jq() {
+  if ! command -v jq >/dev/null 2>&1; then
+    printf "${RED}ERROR: Missing dependency: jq${NC}\n" >&2
+    return 1
+  fi
 }
 
 _check_macos() {
@@ -64,6 +52,7 @@ _check_macos() {
     darwin*) return 0 ;;
     *)
       printf "${RED}ERROR: This script runs on macOS only (current: %s)${NC}\n" "$os" >&2
+      printf "  Windows 端没有云桥：小狼毫直接同步到本机 OneDrive 目录（见 README）\n" >&2
       return 1
       ;;
   esac
@@ -89,17 +78,20 @@ sync_userdict() {
   _check_macos || return 1
   _check_unison || return 1
 
-  local icloud_sync
-  local onedrive_sync
-  icloud_sync="$(_get_icloud_path)"
-  onedrive_sync="$(_get_onedrive_path)"
+  # shellcheck disable=SC1090
+  source "$SCRIPT_DIR/frontends.sh"
+  frontends_validate || return 1
+
+  local icloud_sync onedrive_sync
+  icloud_sync="$(userdict_icloud_path)"
+  onedrive_sync="$(userdict_onedrive_path)"
 
   if [ -z "$icloud_sync" ]; then
-    printf "${RED}ERROR: userdict_sync.icloud not configured in frontends.yaml${NC}\n" >&2
+    printf "${RED}ERROR: userdict_sync.icloud not configured in %s${NC}\n" "$(_config_file)" >&2
     return 1
   fi
   if [ -z "$onedrive_sync" ]; then
-    printf "${RED}ERROR: userdict_sync.onedrive.darwin not configured in frontends.yaml${NC}\n" >&2
+    printf "${RED}ERROR: userdict_sync.onedrive.darwin not configured in %s${NC}\n" "$(_config_file)" >&2
     return 1
   fi
 
@@ -129,18 +121,24 @@ sync_userdict() {
 
   if [ "$DRY_RUN" -eq 1 ]; then
     printf "${YELLOW}--- Dry run (preview only) ---${NC}\n" >&2
-    # Show plan then quit without executing
-    (sleep 1; printf '\nq\n') | timeout 30 unison "$icloud_sync" "$onedrive_sync" \
-      "${unison_opts[@]}" -ui text 2>&1 \
-      | grep -Ev "(No default command|^Proceed with|Failure reading)" \
-      || true
-    printf "${YELLOW}(dry-run: no changes made)${NC}\n" >&2
+    printf "  待执行: unison \"%s\" \"%s\" %s -batch -auto\n" \
+      "$icloud_sync" "$onedrive_sync" "${unison_opts[*]}" >&2
+    printf "  注意: 预览不启动 Unison，也不构成云端文件差异的精确预览；实际执行才进行双向同步。\n" >&2
+    return 0
+  fi
+
+  local rc=0
+  if [ "$VERBOSE" -eq 1 ]; then
+    unison "$icloud_sync" "$onedrive_sync" "${unison_opts[@]}" -batch -auto || rc=$?
   else
-    if [ "$VERBOSE" -eq 1 ]; then
-      unison "$icloud_sync" "$onedrive_sync" "${unison_opts[@]}" -batch -auto
-    else
-      unison "$icloud_sync" "$onedrive_sync" "${unison_opts[@]}" -batch -auto -terse
-    fi
+    unison "$icloud_sync" "$onedrive_sync" "${unison_opts[@]}" -batch -auto -terse || rc=$?
+  fi
+
+  if [ "$rc" -ne 0 ]; then
+    printf "${RED}ERROR: userdict sync (Unison) failed with exit code %s${NC}\n" "$rc" >&2
+    printf "  iCloud:   %s\n" "$icloud_sync" >&2
+    printf "  OneDrive: %s\n" "$onedrive_sync" >&2
+    return "$rc"
   fi
 
   printf "${GREEN}=== Sync complete ===${NC}\n" >&2
@@ -149,6 +147,7 @@ sync_userdict() {
 main() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
+      --config) shift; CONFIG_ARG="${1:-}" ;;
       --dry-run) DRY_RUN=1 ;;
       --verbose) VERBOSE=1 ;;
       --debug) DEBUG=1 ;;
@@ -158,6 +157,17 @@ main() {
     esac
     shift
   done
+
+  # 显式 --config 相对调用者 cwd 解析（与 update.sh 一致）
+  if [ -n "$CONFIG_ARG" ]; then
+    case "$CONFIG_ARG" in
+      /*) FRONTENDS_CONFIG="$CONFIG_ARG" ;;
+      *) FRONTENDS_CONFIG="$PWD/$CONFIG_ARG" ;;
+    esac
+    export FRONTENDS_CONFIG
+  fi
+
+  _require_jq || exit 1
 
   sync_userdict
 }

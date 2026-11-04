@@ -1,8 +1,13 @@
+# 初始化模板：仅在目标目录缺失该文件时由 --init 写入，绝不覆盖已有 installation.yaml。
+# sync_dir 必须是本机 OneDrive 同步目录的绝对路径（Rime 不展开 ~），
+# 与 frontends.json 的 userdict_sync.onedrive.darwin 指向同一目录；
+# macOS 经 Unison 桥接 iCloud（iOS）。已从 iCloud sync_dir 迁移的机器不要重新初始化，
+# 按仓库 README 的迁移步骤只改 sync_dir，保留原 installation_id。
 distribution_code_name: Squirrel
 distribution_name: "鼠鬚管"
 distribution_version: 1.0.3
 install_time: "Wed Sep 18 17:09:15 2024"
 installation_id: "Squirrel-CsHeng's-Macbook-M1-Max"
-sync_dir: "/Users/csheng/Library/Mobile Documents/com~apple~CloudDocs/RimeUserSync"
+sync_dir: "/Users/csheng/Library/CloudStorage/OneDrive-Personal/Apps/RimeSync"
 rime_version: 1.13.0
 update_time: "Mon Jan 27 16:26:44 2025"

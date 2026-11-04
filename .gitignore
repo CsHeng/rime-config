@@ -11,6 +11,12 @@
 !*.custom.yaml
 !custom_phrase_user.dict.yaml.example
 
+# Active change proposals; unrelated historical notes remain ignored.
+!notes/
+notes/*
+!notes/windows-dependency-cleanup-design.md
+!notes/windows-dependency-cleanup-plan.md
+
 # skin / jsonnet
 !resources/
 !resources/**
@@ -26,6 +32,8 @@ custom_phrase_user.txt
 # never track secrets / local env
 cmd/.env
 cmd/frontends.yaml
+cmd/frontends.json
+cmd/frontends.json.*.tmp
 
 # local artifacts (target dir content should not be tracked)
 build/

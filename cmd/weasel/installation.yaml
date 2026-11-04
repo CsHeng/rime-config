@@ -1,3 +1,6 @@
+# 初始化模板：仅在目标目录缺失该文件时由 --init 写入，绝不覆盖已有 installation.yaml。
+# sync_dir 指向本机 OneDrive 同步目录；Windows 无云桥，WeaselDeployer /sync 直接读写该目录，
+# 与 macOS 经 OneDrive 客户端最终一致。不要在真实安装上重新初始化（会重置 installation_id）。
 distribution_code_name: Weasel
 distribution_name: "小狼毫"
 distribution_version: 0.17.4

@@ -1,0 +1,67 @@
+{
+  "_readme": [
+    "复制为 cmd/frontends.json 后按需修改：cp cmd/frontends.json.tmpl cmd/frontends.json",
+    "active: \"auto\"（按平台自动检测）| true（强制启用，可多个）| false（禁用）。",
+    "rsync_filter / bootstrap_filter / *_cmd.executable 中的相对路径相对本文件所在目录解释；target_dir 与云目录支持 ~ 与绝对路径。",
+    "Windows 推荐使用 pwsh 入口 cmd/update.ps1（仅需 PowerShell 7 + 小狼毫）：target_dir 可用原生 C:\\... 或 /c/... 风格。",
+    "若在 Windows 使用 Git Bash 入口 cmd/update.sh：target_dir 必须是 /c/... 风格（rsync 约束）。",
+    "redeploy_cmd / sync_cmd 为 {\"executable\": ..., \"args\": [...]} 对象，参数原样传递，不做 shell 字符串解析。",
+    "userdict_sync 仅供 macOS 桥接入口 cmd/sync-userdict.sh（Unison，iCloud ↔ OneDrive）使用；Windows 端 Rime 的 sync_dir 配置在小狼毫自己的 installation.yaml。"
+  ],
+  "auto": {
+    "darwin": "squirrel",
+    "windows": "weasel"
+  },
+  "frontends": {
+    "squirrel": {
+      "active": "auto",
+      "target_dir": "~/Library/Rime",
+      "ui_layer": "squirrel",
+      "rsync_filter": "squirrel/update-rsync.filter",
+      "bootstrap_filter": "squirrel/bootstrap-rsync.filter",
+      "redeploy_cmd": {
+        "executable": "/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel",
+        "args": ["--reload"]
+      },
+      "sync_cmd": {
+        "executable": "/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel",
+        "args": ["--sync"]
+      }
+    },
+    "weasel": {
+      "active": "auto",
+      "target_dir": "/c/Users/<User>/AppData/Roaming/Rime",
+      "ui_layer": "weasel",
+      "rsync_filter": "weasel/update-rsync.filter",
+      "bootstrap_filter": "weasel/bootstrap-rsync.filter",
+      "redeploy_cmd": {
+        "executable": "WeaselDeployer.exe",
+        "args": ["/deploy"]
+      },
+      "sync_cmd": {
+        "executable": "WeaselDeployer.exe",
+        "args": ["/sync"]
+      }
+    },
+    "hamster": {
+      "active": "auto",
+      "target_dir": "~/Library/Mobile Documents/iCloud~dev~fuxiao~app~hamsterapp/Documents/RIME/Rime",
+      "ui_layer": "hamster",
+      "rsync_filter": "hamster/update-rsync.filter",
+      "bootstrap_filter": "hamster/bootstrap-rsync.filter"
+    },
+    "hamster3": {
+      "active": "auto",
+      "target_dir": "~/Library/Mobile Documents/iCloud~com~ihsiao~apps~Hamster3/Documents/RimeUserData/rime-wanxiang",
+      "ui_layer": "hamster3",
+      "rsync_filter": "hamster3/update-rsync.filter",
+      "bootstrap_filter": "hamster3/bootstrap-rsync.filter"
+    }
+  },
+  "userdict_sync": {
+    "icloud": "~/Library/Mobile Documents/com~apple~CloudDocs/RimeUserSync",
+    "onedrive": {
+      "darwin": "~/Library/CloudStorage/OneDrive-Personal/Apps/RimeSync"
+    }
+  }
+}
