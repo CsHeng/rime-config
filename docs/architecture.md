@@ -1,6 +1,6 @@
 # 架构
 
-本文说明 rime-config-go 的结构、数据流和关键取舍，以及每个取舍的理由。要解决的问题见 [需求](requirements.md)；配置字段、文件保护规则等使用细节见 [使用参考](usage.md)，当前验证状态见 [README](../README.md)。
+本文说明 rime-config 的结构、数据流和关键取舍，以及每个取舍的理由。要解决的问题见 [需求](requirements.md)；配置字段、文件保护规则等使用细节见 [使用参考](usage.md)，当前验证状态见 [README](../README.md)。
 
 ## 形态
 

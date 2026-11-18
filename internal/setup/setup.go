@@ -19,7 +19,7 @@ import (
 	"strings"
 	"unicode"
 
-	"rime-config-go/internal/config"
+	"rime-config/internal/config"
 )
 
 // Options controls one setup run. Test hooks are the SquirrelApps and

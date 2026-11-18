@@ -1,6 +1,6 @@
 # 需求
 
-本文记录 rime-config-go 要解决的问题、用户约束和验收条件。实现结构与关键取舍见 [架构](architecture.md)，使用方法见 [使用参考](usage.md)，当前验证状态见 [README](../README.md)。
+本文记录 rime-config 要解决的问题、用户约束和验收条件。实现结构与关键取舍见 [架构](architecture.md)，使用方法见 [使用参考](usage.md)，当前验证状态见 [README](../README.md)。
 
 ## 目标
 

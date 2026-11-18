@@ -12,7 +12,7 @@ import (
 	"sort"
 	"strings"
 
-	"rime-config-go/internal/config"
+	"rime-config/internal/config"
 )
 
 // Protect describes which target paths must never be written or deleted.

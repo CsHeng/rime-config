@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"rime-config-go/internal/config"
+	"rime-config/internal/config"
 )
 
 // extractZip extracts an upstream archive into dest, rejecting entries that

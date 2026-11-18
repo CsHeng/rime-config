@@ -1,4 +1,4 @@
-# rime-config-go
+# rime-config
 
 一个独立的 Rime 外部工具：更新万象（`amzxyz/rime-wanxiang`）资源，叠加本仓库维护的配置，分发到 Squirrel、Weasel、Hamster3，再调用原生部署和用户词库同步；在 macOS 上还能用 Unison 同步 OneDrive 与 iCloud 两个同步目录。每个平台只需一个可执行文件，不依赖 Go、PowerShell、rsync 等运行时。
 

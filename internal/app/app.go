@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"rime-config-go/internal/config"
-	"rime-config-go/internal/rimesync"
-	"rime-config-go/internal/setup"
-	"rime-config-go/internal/update"
+	"rime-config/internal/config"
+	"rime-config/internal/rimesync"
+	"rime-config/internal/setup"
+	"rime-config/internal/update"
 )
 
 // Version is the tool version reported by --version.

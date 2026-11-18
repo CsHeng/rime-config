@@ -1,3 +1,3 @@
-module rime-config-go
+module rime-config
 
 go 1.26

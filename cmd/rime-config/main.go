@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"rime-config-go/internal/app"
+	"rime-config/internal/app"
 )
 
 func main() {

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"rime-config-go/internal/config"
+	"rime-config/internal/config"
 )
 
 func setupTestApp(t *testing.T) (*App, *bytes.Buffer, *bytes.Buffer) {

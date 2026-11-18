@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"rime-config-go/internal/config"
+	"rime-config/internal/config"
 )
 
 func writeTestFile(t *testing.T, path, content string) {
