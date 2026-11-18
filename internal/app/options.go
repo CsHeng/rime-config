@@ -55,6 +55,19 @@ options:
   --target PATH     redirect the single active frontend to PATH (sandbox distribution only)
   --version         print the version and exit
   -h, --help        print this help
+
+combinations (rejected before any side effect otherwise):
+  --setup           only with --dry-run, --config and --force; --force needs --setup
+  --sync-only       not with --no-sync, --no-download, --no-redeploy, --delete or --target
+  --cloud-sync      needs macOS, cloud_sync in the config and the Rime sync (not --no-sync)
+  --target          without --dry-run it needs --no-redeploy and --no-sync
+
+plan lines (--dry-run):
+  copy              create a target file that is missing
+  update            replace a target file whose content differs
+  keep              leave a protected, excluded or existing seed file as it is
+  delete            remove a file no longer distributed (only with --delete)
+  run / skip        a native or Unison step that would run / is left to the device app
 `
 }
 

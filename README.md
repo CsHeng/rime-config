@@ -22,7 +22,8 @@ mise run sync      # 只同步用户词库
 
 ## 文档
 
-- [使用参考](docs/usage.md)：mise 任务、配置字段、仓库配置、文件保护规则、运行时文件。
+- `rime-config -h`：选项、选项组合规则、计划行含义；`mise tasks`：任务列表。
+- [使用参考](docs/usage.md)：运行方式、配置字段、仓库配置、文件保护规则、运行时文件。
 - [需求](docs/requirements.md)：目标、约束、用户数据边界、验收。
 - [架构](docs/architecture.md)：结构、数据流、关键取舍及理由。
 

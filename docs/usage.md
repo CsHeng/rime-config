@@ -1,29 +1,12 @@
 # 使用参考
 
-本文是配置与日常使用的参考。完整选项见 `rime-config -h`；设计理由见 [架构](architecture.md)。
+本文是配置与日常使用的参考，设计理由见 [架构](architecture.md)。选项、选项组合规则和计划行的含义以 `rime-config -h` 为准，mise 任务以 `mise tasks` 为准。
 
 ## 运行方式
 
-日常通过 mise 运行 `dist/<os>-<arch>/` 下的二进制，任务会先切换到项目根目录；额外参数放在 `--` 之后，例如 `mise run update -- --delete`。改代码后先运行 `mise run package`。
+mise 任务运行 `dist/<os>-<arch>/` 下的二进制，并先切换到项目根目录；额外参数放在 `--` 之后，例如 `mise run update -- --delete`。改代码后先运行 `mise run package`。
 
-| 任务 | 作用 |
-| --- | --- |
-| `mise run setup` | 检测本机前端与云同步目录，生成 `config/frontends.json`；重建加 `-- --force` |
-| `mise run plan` | 预览，不写目标、不调用 Rime/Unison |
-| `mise run update` | 下载、分发、部署、同步 |
-| `mise run sync` | 只同步用户词库 |
-| `mise run package` | 重建 `dist/` 试用包 |
-| `mise run info` | 显示所用的二进制、配置路径与转发参数 |
-
-不用 mise 时，可以把 `dist/<platform>/` 下的压缩包解压到任意目录，直接运行 `./rime-config`。默认配置是 `<可执行文件目录>/config/frontends.json`。
-
-计划中的 `copy` 表示新建文件，`update` 表示替换目标中内容不同的已有文件，`delete` 只在加 `--delete` 时出现。
-
-以下选项组合会在任何操作之前被拒绝：
-
-- `--setup` 只能配合 `--dry-run`、`--config`、`--force` 使用；`--force` 只能配合 `--setup`。
-- `--sync-only` 不能与 `--no-sync`、`--no-download`、`--no-redeploy`、`--delete`、`--target` 组合。
-- `--cloud-sync` 只支持 macOS，需要配置 `cloud_sync`，且不能与 `--no-sync` 组合。
+不用 mise 时，把 `dist/<platform>/` 下的压缩包解压到任意目录，直接运行 `./rime-config`，默认读取 `<可执行文件目录>/config/frontends.json`。
 
 Windows 上运行 mise 任务需要 Git Bash。Weasel 的部署结果无法确认，工具会失败关闭，所以日常用 `mise run update -- --no-redeploy`，然后在托盘里手动部署。
 
