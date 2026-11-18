@@ -4,9 +4,9 @@
 
 ## 运行方式
 
-mise 任务运行 `dist/<os>-<arch>/` 下的二进制，并先切换到项目根目录；额外参数放在 `--` 之后，例如 `mise run update -- --delete`。改代码后先运行 `mise run package`。
+mise 任务运行 `dist/<os>-<arch>/` 下的二进制，并先切换到项目根目录；在 macOS 上还会把 `TMPDIR` 固定为系统的用户临时目录，因为 Squirrel 日志就写在那里。额外参数放在 `--` 之后，例如 `mise run update -- --delete`。改代码后先运行 `mise run package`。
 
-不用 mise 时，把 `dist/<platform>/` 下的压缩包解压到任意目录，直接运行 `./rime-config`，默认读取 `<可执行文件目录>/config/frontends.json`。
+不用 mise 时，把 `dist/<platform>/` 下的压缩包解压到任意目录，直接运行 `./rime-config`，默认读取 `<可执行文件目录>/config/frontends.json`。如果当前 shell 改过 `TMPDIR`，工具会因找不到 Squirrel 日志而失败；这时在配置里设置 `sync_log_dir`。
 
 Windows 上运行 mise 任务需要 Git Bash。Weasel 的部署结果无法确认，工具会失败关闭，所以日常用 `mise run update -- --no-redeploy`，然后在托盘里手动部署。
 

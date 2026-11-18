@@ -1,6 +1,12 @@
 # mise tasks for the local rime-config bundles.
 # Run `mise run info` to see the platform binary and config path in use.
 
+[env]
+# Squirrel writes its log under the per-user temp directory of the GUI session.
+# Pin TMPDIR to it on macOS so a shell or global mise config that overrides
+# TMPDIR cannot send the completion check to the wrong log directory.
+TMPDIR = "{% if os() == 'macos' %}{{ exec(command='getconf DARWIN_USER_TEMP_DIR') }}{% else %}{{ get_env(name='TMPDIR', default='') }}{% endif %}"
+
 [tasks.setup]
 description = "Detect local Rime frontends and write config/frontends.json (add -- --force to rebuild)"
 run = "scripts/mise-run.sh setup"
