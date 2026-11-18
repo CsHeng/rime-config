@@ -1,6 +1,6 @@
 # 架构
 
-本文说明 rime-config-go 的结构、数据流和关键取舍，以及每个取舍的理由。要解决的问题见 [需求](requirements.md)；具体选项、配置字段、文件边界表和当前验证状态见 [README](../README.md)。
+本文说明 rime-config-go 的结构、数据流和关键取舍，以及每个取舍的理由。要解决的问题见 [需求](requirements.md)；配置字段、文件保护规则等使用细节见 [使用参考](usage.md)，当前验证状态见 [README](../README.md)。
 
 ## 形态
 
@@ -35,7 +35,7 @@ GitHub Release ──一次查询/下载──▶ build/cache + upstream
                     部署 ─▶ [Unison] ─▶ 同步 ─▶ [Unison]
 ```
 
-上游资源固定为三项：`amzxyz/rime-wanxiang` 的基础方案（tag 前缀 `v`，按 tag 判断版本）和基础词库（tag 前缀 `dict-nightly`，按 asset `updated_at` 判断），以及 `amzxyz/rime-wanxiang-data` 的语法模型（tag 前缀 `LTS`，按 asset `updated_at` 判断）。下载先写入临时文件，在临时目录解压验证后再替换；失败时保留最后一份可用内容且不更新版本标记。ZIP 穿越、链接逃逸和词库扁平化同名冲突直接拒绝。`GITHUB_TOKEN` 只从环境读取，不出现在输出中。
+上游资源固定为三项：`amzxyz/rime-wanxiang` 的基础方案（tag 前缀 `v`，按 tag 判断版本）和基础词库（tag 前缀 `dict-nightly`，按 asset `updated_at` 判断），以及 `amzxyz/rime-wanxiang-data` 的语法模型（tag 前缀 `LTS`，按 asset `updated_at` 判断）。选择 release 时只查询最近 100 个。下载先写入临时文件，在临时目录解压验证后再替换；失败时保留最后一份可用内容且不更新版本标记。ZIP 穿越、链接逃逸和词库扁平化同名冲突直接拒绝。`GITHUB_TOKEN` 只从环境读取，不出现在输出中。
 
 ## 关键取舍
 

@@ -23,7 +23,7 @@ The repository contains a working implementation: `cmd/rime-config` plus `intern
 
 ## Documentation and implementation
 
-- README.md owns human-facing usage, behavior tables and verified status; AGENTS.md owns AI guidance.
+- README.md stays short: what the tool is, quick start, verified status with known risks, and links. docs/usage.md owns usage reference (mise tasks, option combinations, config fields, repository layers, file protection, runtime files); `rime-config -h` owns the option list. AGENTS.md owns AI guidance.
 - docs/requirements.md owns goals, user constraints, data boundaries and acceptance (V1–V4); docs/architecture.md owns structure, data flow and key decisions with their rationale, rejected alternatives and reconsideration triggers. Update the owning document in the same change as the behavior it describes.
 - The repository has no stage-artifact root. Plans for a large change may live under docs/plans/ while in progress; promote the surviving decisions into docs/architecture.md and delete the plan when the change lands.
 - Keep modules, tests, fixtures, and builds self-contained. go.mod declares the supported Go version; there are no third-party dependencies. Use `gofmt -l .`, `go test ./...`, `go vet ./...`, and `scripts/package.sh` for verification and packaging.
