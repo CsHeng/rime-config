@@ -1,0 +1,5 @@
+# 置顶短语库的编译入口：wanxiang.schema.yaml 的 dependencies 会带上 wanxiang_phrase，
+# 部署时只编译 translator/dictionary 指向的词库，这里把它指向 custom_phrase_user。
+# 由 rime-config 覆盖分发；在本仓库修改后重新运行 update。
+patch:
+  translator/dictionary: custom_phrase_user

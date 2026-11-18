@@ -1,0 +1,90 @@
+# Squirrel 外观与程序选项。由 rime-config 覆盖分发；在本仓库修改后重新运行 update。
+patch:
+  style/color_scheme: wechat
+  style/color_scheme_dark: wechat_dark
+
+  # 主题配色：从旧构建产物复用 wechat / wechat_dark
+  preset_color_schemes/+:
+      wechat:
+        author: zsakvo
+        back_color: 0xFFFFFF
+        border_height: 0
+        border_width: 8
+        candidate_format: "%c %@ "
+        candidate_list_layout: linear
+        comment_text_color: 0x999999
+        corner_radius: 5
+        font_face: PingFangSC
+        font_point: 16
+        hilited_candidate_back_color: 0x75B100
+        hilited_candidate_text_color: 0xFFFFFF
+        hilited_corner_radius: 5
+        inline_preedit: true
+        label_font_point: 12
+        name: "微信"
+        text_color: 0x424242
+      wechat_dark:
+        author: shlroland
+        back_color: 0x151515
+        border_color: 0x151515
+        border_height: 0
+        border_width: 8
+        candidate_format: "%c %@ "
+        candidate_list_layout: linear
+        comment_text_color: 0xAEAEAE
+        corner_radius: 5
+        font_face: PingFangSC
+        font_point: 16
+        hilited_candidate_back_color: 0x75B100
+        hilited_candidate_text_color: 0xFFFFFF
+        hilited_corner_radius: 5
+        inline_preedit: true
+        label_color: 0x777777
+        label_font_point: 12
+        name: "微信·暗"
+        text_color: 0xBBBBBB
+  # style/inline_preedit: true # 內嵌編碼（僅支持TSF）
+  style/candidate_list_layout: linear
+  style/font_face: "PingFangSC, MiSans, MiSans L3"
+  style/font_point: 12
+  reset_ascii_mode: true  # This sets the initial state to ASCII mode
+
+  app_options/+:
+    com.alibaba.DingTalkMac:
+      ascii_mode: false
+    com.tencent.xinWechat:
+      ascii_mode: false
+    com.tencent.qq:
+      ascii_mode: false
+    com.runningwithcrayons.Alfred:
+      ascii_mode: true
+    com.apple.Terminal:
+      ascii_mode: true
+      no_inline: true
+    com.github.wez.wezterm:
+      ascii_mode: true
+      no_inline: true
+    com.mitchellh.ghostty:
+      ascii_mode: true
+      no_inline: true
+    # cursor
+    com.todesktop.230313mzl4w4u92:
+      ascii_mode: true
+    com.microsoft.VSCode:
+      ascii_mode: true
+    com.jetbrains.goland:
+      ascii_mode: true
+    com.jetbrains.phpstorm:
+      ascii_mode: true
+    com.jetbrains.webstorm:
+      ascii_mode: true
+    com.jetbrains.datagrip:
+      ascii_mode: true
+    com.jetbrains.pycharm:
+      ascii_mode: true
+    com.google.android.studio:
+      ascii_mode: true
+    com.google.Chrome:
+      ascii_mode: false
+    com.microsoft.edgemac:
+      ascii_mode: false

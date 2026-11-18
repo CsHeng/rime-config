@@ -1,0 +1,17 @@
+# 万象主方案补丁（全拼，电脑与手机共用）。由 rime-config 覆盖分发；在本仓库修改后重新运行 update。
+# 只写与上游默认不同的设置，其余跟随上游 wanxiang.schema.yaml。
+patch:
+  # 置顶短语库；编译入口见 common/wanxiang_phrase.custom.yaml
+  custom_phrase/dictionary: custom_phrase_user
+
+  # 禁用声调输入，让 7890 用于选择候选
+  speller/alphabet: "zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA123456`;/\\"
+  tone_preedit:
+    "7": ""
+    "8": ""
+    "9": ""
+    "0": ""
+  menu/page_size: 10
+
+  # 表情开关默认开启（switches 第 4 项为 emoji）
+  "switches/@3/reset": 1

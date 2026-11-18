@@ -1,0 +1,49 @@
+{
+  "github_api_base": "https://api.github.com",
+  "work_dir": "../build",
+  "local_layer": "local",
+  "common_ui_layer": "common",
+  "user_phrase_file": "custom_phrase_user.dict.yaml",
+  "frontends": [
+    {
+      "name": "squirrel",
+      "kind": "squirrel",
+      "active": "auto",
+      "target_dir": "~/Library/Rime",
+      "ui_layer": "frontends/squirrel",
+      "exclude": [
+        "*.log",
+        "*.tmp"
+      ],
+      "commands": {
+        "deploy": {
+          "executable": "/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel",
+          "args": [
+            "--reload"
+          ]
+        },
+        "sync": {
+          "executable": "/Library/Input Methods/Squirrel.app/Contents/MacOS/Squirrel",
+          "args": [
+            "--sync"
+          ]
+        }
+      }
+    },
+    {
+      "name": "hamster3",
+      "kind": "hamster3",
+      "active": "auto",
+      "target_dir": "~/Library/Mobile Documents/iCloud~com~ihsiao~apps~Hamster3/Documents/RimeUserData/rime-wanxiang",
+      "ui_layer": "frontends/hamster3",
+      "exclude": [
+        "*.log",
+        "*.tmp"
+      ]
+    }
+  ],
+  "cloud_sync": {
+    "one_drive_dir": "~/Library/CloudStorage/OneDrive-Personal/Apps/RimeSync",
+    "i_cloud_dir": "~/Library/Mobile Documents/com~apple~CloudDocs/RimeUserSync"
+  }
+}

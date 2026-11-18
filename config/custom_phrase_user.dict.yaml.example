@@ -1,0 +1,25 @@
+# Rime dictionary —— 自定义置顶短语模板
+#
+# 用法：复制为 config/local/custom_phrase_user.dict.yaml（被 .gitignore 忽略，不进 git），然后自行增删。
+#      本仓库有这份文件时，update 会把它覆盖分发到所有前端；没有时，目标里已有的短语文件保持不动，
+#      目标缺少短语文件时才用本模板创建一次。
+#
+# 每行：<短语><TAB><编码><TAB><权重>
+#   - 编码为任意字母串（如 gsdz、email），不必是合法拼音
+#   - 同一编码可写多行，权重大的排前面；个人短语建议 50+，便于稳定置顶
+#   - 短语支持万象动态格式：\n 换行、\s 空格、\t 制表符、\z 零宽空格
+#   - 日期时间占位：\Y 年 \m 月 \d 日 \H 时 \M 分 \S 秒 等
+#
+# 生效方式：编辑后重新部署（update 会自动部署），部署时编译为 build/custom_phrase_user.table.bin。
+#
+# 示例（去掉行首 # 即可启用）：
+# 广州市天河区某路某号某大厦A栋0001	gsdz	58
+# 陈先生 13800000000	info	51
+# someone@example.com	email	55
+# 修改时间\Y-\m-\d\s\H:\M:\S	txgsj	5
+---
+name: custom_phrase_user
+version: "LTS"
+sort: by_weight
+use_preset_vocabulary: false
+...

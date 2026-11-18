@@ -1,0 +1,10 @@
+# Weasel 外观与程序选项。由 rime-config 覆盖分发；在本仓库修改后重新运行 update。
+patch:
+  style/color_scheme: wechat
+  app_options/+:
+    r5apex_dx12.exe:
+      ascii_mode: true
+      no_inline: true
+    cs2.exe:
+      ascii_mode: true
+      no_inline: true

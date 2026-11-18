@@ -1,0 +1,8 @@
+# 全局默认设置。由 rime-config 覆盖分发；在本仓库修改后重新运行 update。
+patch:
+  schema_list:
+    - schema: wanxiang
+  # 方案选单热键与展开方式；其余 switcher 设置跟随上游 default.yaml
+  switcher/hotkeys:
+    - Alt+grave
+  switcher/fold_options: false
