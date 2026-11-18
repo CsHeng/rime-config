@@ -1,0 +1,20 @@
+# Rebuildable work and local delivery artifacts
+/build/
+/dist/
+
+# User-local configuration and data
+/config/frontends.json
+/config/frontends.json.bak
+/config/local/custom_phrase_user.dict.yaml
+.env
+.env.*
+!.env.example
+*.userdb/
+*.userdb.txt
+
+# Built Hamster skin packages and downloaded third-party skins
+/resources/*.cskin
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
