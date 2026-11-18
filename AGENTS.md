@@ -1,0 +1,41 @@
+# AI Agent Instructions
+
+## Project
+
+This is an independent Go CLI project for Rime resource updates, local overlays, safe multi-frontend deployment, and user dictionary synchronization. Read README.md for actual implementation status.
+
+The repository contains a working implementation: `cmd/rime-config` plus `internal/{config,setup,update,rimesync,app}`, the user's migrated Rime configuration under `config/` (pinyin only on desktop and phone), the Hamster skin source under `resources/`, tests, and `scripts/package.sh`. `--setup` detects installed frontends and cloud sync trees to generate `frontends.json`; it only writes that configuration file, never a Rime target. Update, deploy and sync against the real macOS Squirrel target are verified; Hamster3 distribution, real `--cloud-sync` transfers, Windows runs and cross-device acceptance are still unverified. README.md owns the verified status.
+
+## Ownership and independence
+
+- Own all source, configuration, assets, tests, caches, build scripts, and delivery artifacts inside this project.
+- Do not reference other local tool repositories, use cross-repository go.work/replace directives, submodules, symlinks, shared generators, or runtime fallback to another updater.
+- External Rime installations and explicitly configured OneDrive/iCloud directories are integration targets, not source-code dependencies.
+- Static assets adopted into this project must be ordinary self-contained files with applicable licensing preserved. Never copy credentials, private dictionaries, real installation files, or cloud synchronization trees.
+
+## Protected state
+
+- Never overwrite user.yaml, installation.yaml, existing installation_id, userdb directories, or runtime build data through ordinary updates.
+- Initialization only writes missing files. Deletion is explicit and must preserve excluded subtrees.
+- Desktop Rime uses local OneDrive paths for the same logical cloud folder; macOS syncs the OneDrive and iCloud folders with Unison (`--cloud-sync`, before and after the Rime sync). Do not merge live databases; Rime owns snapshot import/export.
+- Squirrel `--reload`/`--sync` only submit asynchronous work and Weasel's `/deploy` ignores task results, so process exit is never proof of success. Squirrel completion comes from durable Rime state (`user.yaml` `var/last_build_time` for deploy; a fresh `<sync_dir>/<installation_id>/<dict>.userdb.txt` for every `*.userdb` for sync), because glog buffers its INFO completion line inside the idle IME; the state must then stay unchanged for a settle interval (snapshots are written in place; short tasks follow the build time), a deploy is submitted only after the second of the previous last_build_time, a sync with no `*.userdb` and a missing or unreadable log directory fail closed, a visible log summary is authoritative and maintenance-worker ERROR lines fail the step. The settle interval is a heuristic whose residual risk the user accepted (docs/architecture.md); do not describe it as proof of export completion. Weasel `/sync` completion comes from its log (the process exits and flushes). An unverifiable Weasel deploy must fail closed without running dependent steps.
+- Multiple tools may coexist but must not write the same Rime target or run Unison on the same folder pair concurrently.
+
+## Documentation and implementation
+
+- README.md owns human-facing usage, behavior tables and verified status; AGENTS.md owns AI guidance.
+- docs/requirements.md owns goals, user constraints, data boundaries and acceptance (V1–V4); docs/architecture.md owns structure, data flow and key decisions with their rationale, rejected alternatives and reconsideration triggers. Update the owning document in the same change as the behavior it describes.
+- The repository has no stage-artifact root. Plans for a large change may live under docs/plans/ while in progress; promote the surviving decisions into docs/architecture.md and delete the plan when the change lands.
+- Keep modules, tests, fixtures, and builds self-contained. go.mod declares the supported Go version; there are no third-party dependencies. Use `gofmt -l .`, `go test ./...`, `go vet ./...`, and `scripts/package.sh` for verification and packaging.
+- User-facing program output (logs, errors, plans, help) is English. Rime YAML comments and human docs stay Chinese.
+- Hamster3's `include_keyboard_rime_files.txt` (`.*[.]userdb.*$`) ships in `config/frontends/hamster3/`; the tool's `*.userdb` protection does not replace it. iOS return is still unverified on the device.
+- Package layout: `cmd/rime-config/main.go` (flags, signals, exit code), `internal/config` (JSON, path resolution, validation), `internal/setup` (frontend and cloud directory detection, config generation), `internal/update` (upstream fetch/cache/ZIP, stage, distribution), `internal/rimesync` (native commands, state/log completion observation, Unison), `internal/app` (orchestration and option combinations).
+- `--setup` is the only config-writing path: it detects Squirrel/Weasel/Hamster3 and OneDrive/iCloud sync directories, writes only `frontends.json` (unless it already exists and `--force` is absent), writes home paths with `~`, and must not touch a Rime target or cloud tree. Detection is best effort; never guess a missing frontend or merge ambiguous candidates. `config/frontends.json.example` is the desensitized generated reference, not a universal manual template.
+- Ownership in distribution is decided by path, with no ownership records: repository layers (local, common UI, frontend UI) are the source of truth and replace differing target files (plans show `update`, summaries count replacements); seeds (upstream `custom/**`, the user phrase template) are only created when missing; `user.yaml`, `installation.yaml`, any `*.userdb`/`*.userdb.txt` and the target `build/` are never written (names compared case-insensitively); `lua/`, `tips/`, `custom/`, the user phrase file and configured exclusions are never deleted.
+- The user phrase file is managed when `config/local/custom_phrase_user.dict.yaml` exists (gitignored; it may hold personal data and must never be committed or packaged); otherwise an existing target copy is left alone.
+- The tool keeps no state outside `work_dir` (default `build/`, disposable): cache, upstream, stage and the Unison archive (`UNISON=<work_dir>/unison`). Do not add durable state under user config/Library directories.
+- Preflight owns every required input: targets may not overlap the configuration, workspace, layers, phrase template or another selected target; overlap checks canonicalize existing symlink prefixes; workspace and target subpaths may not traverse symlinks that escape their root; a Squirrel sync needs a readable `installation.yaml` with `installation_id` in the target; all selected layers (payload allowlist, no symlinks/hidden segments), the phrase example, all selected targets and required executables (including Unison for a non-dry cloud sync) must be valid before downloads or writes. `--sync-only` does not require update-only inputs. Repository layers may contain only `.yaml`/`.yml`/`.txt`/`.json` payload files and no hidden path segment.
+- `mise.toml` and `scripts/mise-run.sh` are thin convenience wrappers over the `dist/` binaries (project-root cwd, OS/arch selection, argument pass-through). They are not part of the tool contract; keep them minimal and let the binary own behavior.
+- Packaging copies only the explicit public asset allowlist in `scripts/package.sh`; never add `config/frontends.json`, `config/local/custom_phrase_user.dict.yaml`, private dictionaries, userdb, logs, skins or hidden files.
+- Build outputs go under dist/; rebuildable cache/upstream/stage under build/. User configuration and phrases are untracked. Tests must use temporary directories and fixtures, never a real Rime, OneDrive or iCloud target.
+- Do not commit, push, publish, install, deploy to real Rime, or synchronize real cloud data without matching user authorization. Consume later explicit task authority for those same actions instead of treating a proposal as execution permission.
