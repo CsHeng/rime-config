@@ -1,0 +1,26 @@
+# mise tasks for the local rime-config bundles.
+# Run `mise run info` to see the platform binary and config path in use.
+
+[tasks.setup]
+description = "Detect local Rime frontends and write config/frontends.json (add -- --force to rebuild)"
+run = "scripts/mise-run.sh setup"
+
+[tasks.info]
+description = "Show the resolved OS/arch bundle, config path and forwarded args"
+run = "scripts/mise-run.sh info \"$@\""
+
+[tasks.plan]
+description = "Dry run: show the update/distribution/native-step plan"
+run = "scripts/mise-run.sh plan \"$@\""
+
+[tasks.update]
+description = "Daily update: fetch, distribute, deploy, sync (extra flags after --)"
+run = "scripts/mise-run.sh update \"$@\""
+
+[tasks.sync]
+description = "Only sync Rime user dictionaries"
+run = "scripts/mise-run.sh sync \"$@\""
+
+[tasks.package]
+description = "Build the Windows/macOS trial bundles into dist/"
+run = "scripts/mise-run.sh package \"$@\""
