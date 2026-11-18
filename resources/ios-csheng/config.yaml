@@ -1,0 +1,20 @@
+alphabetic:
+  iPhone:
+    landscape: "alphabeticLandscape"
+    portrait: "alphabeticPortrait"
+author: "CsHeng"
+description: "ANSI排列，配色参考iOS26"
+name: "iOS-CsHeng"
+numeric:
+  iPhone:
+    landscape: "landscapeNumeric"
+    portrait: "portraitNumeric"
+panel:
+  iPhone:
+    landscape: "panel_landscape"
+    portrait: "panel_portrait"
+pinyin:
+  iPhone:
+    landscape: "pinyinLandscape"
+    portrait: "pinyinPortrait"
+version: "1.0.0"
